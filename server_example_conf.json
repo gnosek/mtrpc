@@ -1,0 +1,65 @@
+{
+    "rpc_tree_init": {
+        "imports": ["mtrpc.server.sysmethods as system"],
+        "paths": [
+            "server_example_methods.py as example",
+            "netservice_methods.py as netservices"
+        ],
+        "mod_init_kwargs": {
+            "logging_settings": {
+                "handlers": [
+                    {
+                        "cls": "StreamHandler", 
+                        "format": "%(asctime)s %(name)s:%(levelno)s @%(threadName)s: %(message)s", 
+                        "kwargs": {}, 
+                        "level": "info"
+                    }
+                ],
+                "level": "warning",
+                "mod_logger_pattern": "mtrpc.server.rpc_log.{full_name}",
+                "propagate": false
+            },
+            "mod_globals": {
+                "netservices": {
+                    "MAILDROP_CONF_PATH_PATTERN": "/home/{account}/mail/{domain}/{localpart}/.mailfilter"
+                }
+            }
+        }
+    }, 
+    "amqp_params": {
+        "host": "localhost:5672",
+        "userid": "guest",
+        "password": "guest",
+        "virtual_host": "/"
+    }, 
+    "bindings": [
+        ["rpc.friendly.exchange", "rk.usr.#", "", ""],
+        ["rpc.systemonly.exchange", "rk.usr.#", "{full_name}", "^(system(\\..*)?)?$"]
+    ], 
+    "exchange_types": {
+        "rpc.friendly.exchange": "topic",
+        "rpc.systemonly.exchange": "topic"
+    }, 
+    "manager_attributes": {}, 
+    "responder_attributes": {},
+    "logging_settings": {
+        "handlers": [
+            {
+                "cls": "StreamHandler", 
+                "format": "%(asctime)s %(name)s:%(levelno)s @%(threadName)s: %(message)s", 
+                "kwargs": {}, 
+                "level": "info"
+            }
+        ], 
+        "level": "info", 
+        "server_logger": "mtrpc.server",
+        "propagate": false
+    }, 
+    "os_settings": {
+        "daemon": false, 
+        "signal_actions": {"SIGHUP": "restart", "SIGTERM": "exit"}, 
+        "stopping_timeout": 30, 
+        "umask": null, 
+        "working_dir": null
+    }
+}
