@@ -426,7 +426,6 @@ class RPCManager(AMQPClientServiceThread):
             unique_id = hashlib.sha1('{0.exchange}|{0.routing_key}'.format(
                 binding_props)).hexdigest()[0:6]
             queue = '.'.join(['mtrpc_queue', client_id, unique_id])
-            self.log.warning(repr(binding_props))
             self._queues.append(queue)
             self._queues2bindings[queue] = BindingProps._make(binding_props)
 
