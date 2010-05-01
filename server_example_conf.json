@@ -10,8 +10,19 @@
                 "handlers": [
                     {
                         "cls": "StreamHandler", 
-                        "format": "%(asctime)s %(name)s:%(levelno)s @%(threadName)s: %(message)s", 
+                        "format": "%(asctime)s %(name)s:%(levelname)s @%(threadName)s: %(message)s", 
                         "kwargs": {}, 
+                        "level": "info"
+                    },
+                    {
+                        "cls": "RotatingFileHandler", 
+                        "format": "%(asctime)s %(name)s:%(levelname)s @%(threadName)s: %(message)s", 
+                        "kwargs": {
+                            "filename": "/var/log/mtrpc/mail_account.log",
+                            "maxBytes": 10485760,
+                            "backupCount": 5,
+                            "encoding": "utf8"
+                        },
                         "level": "info"
                     }
                 ],
@@ -40,14 +51,28 @@
         "rpc.friendly.exchange": "topic",
         "rpc.systemonly.exchange": "topic"
     }, 
+    "manager_settings": {
+        "client_id": "example_mtrpc_client"
+    },
     "manager_attributes": {}, 
     "responder_attributes": {},
     "logging_settings": {
         "handlers": [
             {
                 "cls": "StreamHandler", 
-                "format": "%(asctime)s %(name)s:%(levelno)s @%(threadName)s: %(message)s", 
+                "format": "%(asctime)s %(name)s:%(levelname)s @%(threadName)s: %(message)s", 
                 "kwargs": {}, 
+                "level": "info"
+            },
+            {
+                "cls": "RotatingFileHandler", 
+                "format": "%(asctime)s %(name)s:%(levelname)s @%(threadName)s: %(message)s", 
+                "kwargs": {
+                    "filename": "/var/log/mtrpc/mail_account.log",
+                    "maxBytes": 10485760,
+                    "backupCount": 5,
+                    "encoding": "utf8"
+                },
                 "level": "info"
             }
         ], 
@@ -57,8 +82,8 @@
     }, 
     "os_settings": {
         "daemon": false, 
-        "signal_actions": {"SIGHUP": "restart", "SIGTERM": "exit"}, 
-        "stopping_timeout": 30, 
+        "signal_actions": {"SIGHUP": "restart", "SIGTERM": "exit", "SIGINT": "exit"}, 
+        "stopping_timeout": 10, 
         "umask": null, 
         "working_dir": null
     }
