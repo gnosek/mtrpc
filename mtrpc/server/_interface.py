@@ -50,6 +50,7 @@ CONFIG_SECTION_TYPES = dict(
         amqp_params=dict,
         exchange_types=dict,
         bindings=list,
+        manager_settings=dict,
         manager_attributes=dict,
         responder_attributes=dict,
         logging_settings=dict,
@@ -80,6 +81,7 @@ CONFIG_SECTION_FIELDS = dict(
         amqp_params = None,           # to be a dict with some keys...
         exchange_types = None,        # to be a dict: {exchange, its type}
         bindings = None,              # to be a list of binding props
+        manager_settings = None,      # to be a dict with some keys...
         manager_attributes = None,    # to be a dict with some keys...
         responder_attributes = None,  # to be a dict with some keys...
         logging_settings = dict(
@@ -606,6 +608,7 @@ class MTRPCServerInterface(object):
             self.manager = threads.RPCManager(config['amqp_params'],
                                               config['bindings'],
                                               config['exchange_types'],
+                                              config['manager_settings']['client_id'],
                                               rpc_tree,
                                               self.responder,
                                               self.task_dict,

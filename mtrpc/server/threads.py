@@ -360,11 +360,8 @@ class RPCManager(AMQPClientServiceThread):
     '''
     
     default_exchange_type = 'topic'
-    queue_prefix = 'RPCManager'
-    
-    wakeup_exchange = 'RPCManager_wakeup_exchange'
-    wakeup_queue_sufix = 'wakeup'
-    wakeup_routing_key = 'wakeup'
+
+    wakeup_exchange = 'amq.direct'
 
     # for (de)serialization messages from/to JSON
     json_encoding = DEFAULT_JSON_ENCODING
@@ -376,6 +373,7 @@ class RPCManager(AMQPClientServiceThread):
              amqp_params,           # dict (params for AMQP connection...)
              bindings,              # seq of lists of BindingProps instances  # TODO!
              exchange_types,        # dict of exchange: 'topic'|'direct' items
+             client_id,             # string: globally unique client name
              rpc_tree,              # methodtree.RPCTree instance
              responder,             # RPCResponder instance (not started)
              task_dict,             # empty dict
@@ -397,6 +395,9 @@ class RPCManager(AMQPClientServiceThread):
         * exchange_types -- dict that maps AMQP exchanges (str) to exchange
           types (str: 'topic' or 'direct'...);
           
+        * client_id -- string: globally unique client id, goes into exchange and
+          queue names
+
         * rpc_tree -- methodtree.RPCTree instance;
         
         * responder -- RPCResponder instance (not started);
@@ -421,16 +422,11 @@ class RPCManager(AMQPClientServiceThread):
         self._queues = []   # queue names (in sorted order)
         self._queues2bindings = {}   # queue names and their binding props
         for i, binding_props in enumerate(bindings):
-            queue = '.'.join([self.queue_prefix, str(i)])
+            queue = '.'.join(['mtrpc_queue', client_id, str(i)])
             self._queues.append(queue)
             self._queues2bindings[queue] = BindingProps._make(binding_props)
-            
-        self._wakeup_queue = '.'.join([self.queue_prefix,
-                                       self.wakeup_queue_sufix])
-        self._queues.append(self._wakeup_queue)
-        (self._queues2bindings[self._wakeup_queue]
-        ) = BindingProps(self.wakeup_exchange, self.wakeup_routing_key,
-                         None, None)
+
+        self.client_id = client_id
         
         self._exchange_types = exchange_types
         self.rpc_tree = rpc_tree
@@ -479,6 +475,28 @@ class RPCManager(AMQPClientServiceThread):
                                                 no_ack=False,
                                                 callback=self.get_and_go,
                                                 consumer_tag=queue)  # (<-yes)
+            self._queues.append("_wakeup_queue")
+            (wakeup_q, _, _
+            ) = self.amqp_channel.queue_declare(durable=False,
+                                                auto_delete=True)
+
+            self.wakeup_routing_key = '.'.join(['wakeup', self.client_id, wakeup_q])
+
+            self.amqp_channel.exchange_declare(exchange=self.wakeup_exchange,
+                                               type='direct',
+                                               durable=False,
+                                               auto_delete=True)
+            self.amqp_channel.queue_bind(queue=wakeup_q,
+                                         exchange=self.wakeup_exchange,
+                                         routing_key=self.wakeup_routing_key)
+            self.amqp_channel.basic_consume(queue=wakeup_q,
+                                            no_ack=False,
+                                            callback=self.get_and_go,
+                                            consumer_tag="_wakeup_queue")  # (<-yes)
+
+            (self._queues2bindings["_wakeup_queue"]
+            ) = BindingProps(self.wakeup_exchange, self.wakeup_routing_key,
+                             None, None)
         except Exception:
             raise self.AMQPError(traceback.format_exc())
 
@@ -509,7 +527,7 @@ class RPCManager(AMQPClientServiceThread):
         "AMQP consume callback: prepare a task and start a task thread"
 
         queue = msg.delivery_info['consumer_tag']  # (queue == consumer tag)
-        if queue == self._wakeup_queue:
+        if queue == "_wakeup_queue":
             self.amqp_channel.basic_ack(msg.delivery_tag)
             return
         binding_props = self._queues2bindings[queue]
