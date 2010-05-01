@@ -14,6 +14,7 @@ from future_builtins import filter, map, zip
 
 import abc
 import functools
+import hashlib
 import itertools
 import json
 import logging
@@ -421,8 +422,11 @@ class RPCManager(AMQPClientServiceThread):
         
         self._queues = []   # queue names (in sorted order)
         self._queues2bindings = {}   # queue names and their binding props
-        for i, binding_props in enumerate(bindings):
-            queue = '.'.join(['mtrpc_queue', client_id, str(i)])
+        for binding_props in bindings:
+            unique_id = hashlib.sha1('{0.exchange}|{0.routing_key}'.format(
+                binding_props)).hexdigest()[0:6]
+            queue = '.'.join(['mtrpc_queue', client_id, unique_id])
+            self.log.warning(repr(binding_props))
             self._queues.append(queue)
             self._queues2bindings[queue] = BindingProps._make(binding_props)
 
