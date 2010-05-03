@@ -4,31 +4,36 @@ import sys
 import threading
 import time
 import os
+from optparse import OptionParser
 
 sys.path.insert(0, '/usr/local/megiteam/python2.6')
 
 from mtrpc.server import MTRPCServerInterface
 
-CONFIG_DIR = '/etc/megiteam/mtrpc'
 dir, name = os.path.split(sys.argv[0])
 
 if name.endswith("_agent"):
     name = name[:-6] # strip _agent
 
-## CONFIG_PATH = 'server_example_conf.json'   # (<- look at that file)
+CONFIG_DIR = '/etc/megiteam/mtrpc'
 CONFIG_PATH = os.path.join(CONFIG_DIR, name + ".json")
 
-cmdline_args = set(sys.argv[1:])
-# loop mode/non-loop mode * daemon/non-daemon mode == four possibilities :-)
-loop_mode = ('-l' in cmdline_args) or ('--loop-mode' in cmdline_args)
-force_daemon = ('-d' in cmdline_args) or ('--daemon' in cmdline_args)
+parser = OptionParser(usage='%prog [options]')
+parser.add_option('-l', '--loop', dest='loop', action='store_true', default=False, help='Loop inside MTRPC (internal)')
+parser.add_option('-d', '--daemon', dest='daemon', action='store_true', default=False, help='Daemonize')
+parser.add_option('-c', '--config', dest='config', default=CONFIG_PATH, help='Path to config file', metavar='FILE')
 
+(o, a) = parser.parse_args(sys.argv[1:])
+
+loop_mode = o.loop
+force_daemon = o.daemon
+config_path = o.config
 
 if loop_mode:
     final_callback = MTRPCServerInterface.restart_on
     # (^ to restart the server when the service threads are stopped)
     MTRPCServerInterface.configure_and_start(
-            CONFIG_PATH,
+            config_path,
             force_daemon=force_daemon,
             loop_mode=True,       # <- stay in the inner server loop
             final_callback=final_callback,
@@ -42,7 +47,7 @@ else:
         while True:
             if restart_lock.acquire(False):   # (<- non-blocking)
                 server = MTRPCServerInterface.configure_and_start(
-                        CONFIG_PATH,
+                        config_path,
                         force_daemon=force_daemon,
                         loop_mode=False,  # <- return immediately
                         final_callback=final_callback,
