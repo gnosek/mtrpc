@@ -64,6 +64,7 @@ class ConfigFileManager(object):
           be aquired;
         * comment_indicator (str) -- keyword arg
           for digest_line_start_pattern.format() (default: '#');
+          may be None to disable digest support
         * digest_line_start_pattern (str) -- pattern of the beginning of
           the (last) line including file's md5-hexdigest
           (default: '{comment_indicator} md5:');
@@ -111,8 +112,12 @@ class ConfigFileManager(object):
                                                   self.file_name,
                                                   timeout=flocking)
         # digest line start pattern...
-        self.digest_line_start = digest_line_start_pattern.format(
+        if comment_indicator is not None:
+            self.digest_line_start = digest_line_start_pattern.format(
                                           comment_indicator=comment_indicator)
+            self.use_digest = True
+        else:
+            self.use_digest = False
 
         # determine existing content
         # + whether it has been modified manually (md5 digest test)
@@ -128,7 +133,10 @@ class ConfigFileManager(object):
             else:
                 raise
         else:
-            if (self._existing_lines and self._existing_lines[-1].startswith(
+            if comment_indicator is None:
+                self._existing_content = '\n'.join(self._existing_lines + [''])
+                self._modified_manually = False
+            elif (self._existing_lines and self._existing_lines[-1].startswith(
                                                      self.digest_line_start)):
                 (declared_digest
                 ) = self._existing_lines.pop()[len(self.digest_line_start):]
@@ -234,18 +242,20 @@ class ConfigFileManager(object):
                    else ''.join([self._existing_content, to_write]))
         if not content.endswith('\n'):
             content = ''.join([content, '\n'])
-            
-        hash_obj = hashlib.md5()
-        hash_obj.update(content)
-        new_digest = hash_obj.hexdigest()
+
+        if self.use_digest:
+            hash_obj = hashlib.md5()
+            hash_obj.update(content)
+            new_digest = hash_obj.hexdigest()
 
         tmp_dir = tempfile.mkdtemp()
         try:
             tmp_file_path = os.path.join(tmp_dir, self.file_name)
             with open(tmp_file_path, 'w') as tmp_file:
                 tmp_file.write(content)
-                tmp_file.write(self.digest_line_start)
-                tmp_file.write(new_digest)
+                if self.use_digest:
+                    tmp_file.write(self.digest_line_start)
+                    tmp_file.write(new_digest)
             os.chown(tmp_file_path, self.uid, self.gid)
             os.chmod(tmp_file_path, self.mode)
             os.rename(tmp_file_path, self.file_path)
