@@ -18,7 +18,7 @@
                         "cls": "RotatingFileHandler", 
                         "format": "%(asctime)s %(name)s:%(levelname)s @%(threadName)s: %(message)s", 
                         "kwargs": {
-                            "filename": "/var/log/mtrpc/mail_account.log",
+                            "filename": "/var/log/mtrpc/example.log",
                             "maxBytes": 10485760,
                             "backupCount": 5,
                             "encoding": "utf8"
@@ -44,15 +44,13 @@
         "virtual_host": "/"
     }, 
     "bindings": [
-        ["rpc.friendly.exchange", "rk.usr.#", "", ""],
-        ["rpc.systemonly.exchange", "rk.usr.#", "{full_name}", "^(system(\\..*)?)?$"]
+        ["rpc.megiteam.example", "#", "", ""]
     ], 
     "exchange_types": {
-        "rpc.friendly.exchange": "topic",
-        "rpc.systemonly.exchange": "topic"
+        "rpc.megiteam.example": "topic"
     }, 
     "manager_settings": {
-        "client_id": "example_mtrpc_client"
+        "client_id": "rpc.megiteam.example"
     },
     "manager_attributes": {}, 
     "responder_attributes": {},
@@ -68,7 +66,7 @@
                 "cls": "RotatingFileHandler", 
                 "format": "%(asctime)s %(name)s:%(levelname)s @%(threadName)s: %(message)s", 
                 "kwargs": {
-                    "filename": "/var/log/mtrpc/mail_account.log",
+                    "filename": "/var/log/mtrpc/example.log",
                     "maxBytes": 10485760,
                     "backupCount": 5,
                     "encoding": "utf8"
