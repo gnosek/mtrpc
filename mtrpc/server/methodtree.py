@@ -765,11 +765,12 @@ def _build_subtree(rpc_tree, cur_mod, cur_full_name,
     if ant_names or doc or tag_dict:
         _full_name = initialized_mods.setdefault(cur_mod, cur_full_name)
         if _full_name != cur_full_name:
-            raise RuntimeError('Cannot create RPC-module {0} based on Python-'
+            warnings.warn('Cannot create RPC-module {0} based on Python-'
                                'module {1!r} -- that Python-module has been '
                                'already used as a base for {2} RPC-module.'
                                .format(cur_full_name, cur_mod,
                                        _full_name))
+            return
         # declare (create if needed) RPC-module
         rpc_tree.get_rpc_module(cur_full_name, doc, tag_dict)
         # run module initialization callable (with Python module as 1st arg)
