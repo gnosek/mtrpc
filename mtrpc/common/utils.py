@@ -47,7 +47,7 @@ class ConfigFileManager(object):
     def __init__(self, path_pattern, path_fields, user_name, group_name=None,
                  mode=0o600, flocking=30, comment_indicator='#',
                  digest_line_start_pattern='{comment_indicator} md5:',
-                 path_field_chars=DEFAULT_PATH_FIELD_CHARS):
+                 path_field_chars=DEFAULT_PATH_FIELD_CHARS, override_manual=False):
                      
         '''Initialize manager: acquire flock, read content, check digest etc.
 
@@ -70,6 +70,8 @@ class ConfigFileManager(object):
           (default: '{comment_indicator} md5:');
         * path_field_chars (str) -- legal characters in path parts, important
           for security (default: ConfigFileManager.DEFAULT_PATH_FIELD_CHARS).
+        * override_manual (bool) -- override manual modifications (don't raise
+          ModifiedManually exception (default: false)
         '''
 
         # modifying-related attributes
@@ -118,6 +120,9 @@ class ConfigFileManager(object):
             self.use_digest = True
         else:
             self.use_digest = False
+
+        # ignore manual modifications?
+        self._override_manual = override_manual
 
         # determine existing content
         # + whether it has been modified manually (md5 digest test)
@@ -194,7 +199,7 @@ class ConfigFileManager(object):
         
     @property
     def modified_manually(self):
-        "Has the file modified manually?"
+        "Has the file been modified manually?"
         return self._modified_manually
 
 
@@ -202,7 +207,7 @@ class ConfigFileManager(object):
     def writer(self):
         "File-like object -- use it to append (only if not modified_manually)"
         
-        if self._modified_manually:
+        if self._modified_manually and not self._override_manual:
             raise self.ModifiedManually("Config file has been modified "
                                         "manually, cannot change it")
         else:
@@ -212,7 +217,7 @@ class ConfigFileManager(object):
     def clear(self):
         "Clear file content (only if not modified_manually)"
         
-        if self._modified_manually:
+        if self._modified_manually and not self._override_manual:
             raise self.ModifiedManually("Config file has been modified "
                                         "manually, cannot change it")
         else:
