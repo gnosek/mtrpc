@@ -323,7 +323,7 @@ class AMQPClientServiceThread(ServiceThread):
                     return action(self, *args, **kwargs)
                 except Exception as exc:
                     self.log.warning('Error during action %r', action)
-                    self.log.debug('Exception info:', exc_info=True)
+                    self.log.warning('Exception info:', exc_info=True)
                     attempt_nr = next(attempt_counter)
                     if attempt_nr == self.try_action_attempts:
                         err = exc  # (<- Py3.x compatibile way)
