@@ -478,7 +478,6 @@ class RPCManager(AMQPClientServiceThread):
                                                 no_ack=False,
                                                 callback=self.get_and_go,
                                                 consumer_tag=queue)  # (<-yes)
-            self._queues.append("_wakeup_queue")
             (wakeup_q, _, _
             ) = self.amqp_channel.queue_declare(durable=False,
                                                 auto_delete=True)
