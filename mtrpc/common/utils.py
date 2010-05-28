@@ -1,7 +1,10 @@
-"""MTRPC common utility functions"""
-
+# mtrpc/common/utils.py
+#
 # Author: Jan Kaliszewski (zuo)
 # Copyright (c) 2010, MegiTeam
+
+"""MTRPC common utility classes and functions"""
+
 
 
 from future_builtins import filter, map, zip
@@ -30,16 +33,19 @@ from .errors import raise_exc
 #
 
 class ConfigFileManager(object):
-    "Config file manager -- for atomic + md5-digest-controlled file modifying"
 
-    # flock-file-related constants
+    """A tool for possibly atomic + md5-digest-controlled file modifying"""
+
+
+    # filename-related constants
     FLOCK_PREFIX = '.flock--'
     FLOCK_SUFFIX = '--flock'
+    TMP_SUBDIR_PREFIX = '.tmp-mtrpc-cfmanager-'
 
     # legal characters in path parts (important for security!)
     DEFAULT_PATH_FIELD_CHARS = string.ascii_letters + string.digits + '._-'
 
-    
+
     class ModifiedManually(Exception):
         "Cannot write -- file has been modified manually (digest test failed)"
 
@@ -47,32 +53,56 @@ class ConfigFileManager(object):
     def __init__(self, path_pattern, path_fields, user_name, group_name=None,
                  mode=0o600, flocking=30, comment_indicator='#',
                  digest_line_start_pattern='{comment_indicator} md5:',
-                 path_field_chars=DEFAULT_PATH_FIELD_CHARS, override_manual=False):
-                     
-        '''Initialize manager: acquire flock, read content, check digest etc.
+                 path_field_chars=DEFAULT_PATH_FIELD_CHARS,
+                 override_manual=False):
+
+        """Initialize manager: acquire flock, read content, check digest etc.
 
         Arguments:
-        * path_pattern (str) -- config file path pattern (see: path_fields);
-        * path_fields (dict) -- keyword args for path_pattern.format();
+
+        * path_pattern (str) -- file path pattern (see: path_fields);
+
+        * path_fields (dict) -- keyword args for path_pattern.format() to
+          make the actual file path;
+
         * user_name (str) -- name of the unix user owning the config file;
+
         * group_name (str) -- name of the unix group owning the config file;
           if None (default) the main group of the user specified with
           user_name will be used;
+
         * mode (int) -- desired config file access mode (default: 0o600);
-        * flocking (int | float | NoneType) -- the config file's advisory lock
-          acquiring timeout (in seconds, default: 30); if None, no flock will
-          be aquired;
-        * comment_indicator (str) -- keyword arg
-          for digest_line_start_pattern.format() (default: '#');
-          may be None to disable digest support
+
+        * flocking (int | float | NoneType) -- timeout of acquiring the
+          config file's advisory lock (in seconds, default: 30); if None,
+          no flock will be aquired and the flock file will not be created
+          (if it does not exist yet);
+
+          the flock file name is based on the managed file name -- enclosed
+          with the FLOCK_PREFIX and FLOCK_SUFFIX class attributes;
+
+          the flock file is not being removed when the flock is released;
+
+          please note that flock is an advisory lock -- other applications
+          and scripts are not forced to be concerned about it; to use it,
+          they must acquire/release it explicitly (e.g. with 'flock' system
+          call or 'flock' linux command; see 'flock' linux manpages 1 and 2);
+
+        * comment_indicator (str) -- keyword argument value for
+          digest_line_start_pattern.format() (default: '#');
+          may be None to disable digest support;  [!TODO! moze lepiej w tym celu digest_line_start_pattern=None???]
+
         * digest_line_start_pattern (str) -- pattern of the beginning of
-          the (last) line including file's md5-hexdigest
-          (default: '{comment_indicator} md5:');
+          the (last) line including file's md5-hexdigest (default:
+          '{comment_indicator} md5:');
+
         * path_field_chars (str) -- legal characters in path parts, important
-          for security (default: ConfigFileManager.DEFAULT_PATH_FIELD_CHARS).
+          for security (default: ConfigFileManager.DEFAULT_PATH_FIELD_CHARS);
+
         * override_manual (bool) -- override manual modifications (don't raise
-          ModifiedManually exception (default: false)
-        '''
+          ModifiedManually exception (default: False).
+
+        """
 
         # modifying-related attributes
         self._writer_io = StringIO()
@@ -160,7 +190,6 @@ class ConfigFileManager(object):
     @staticmethod
     def acquire_flock(dir_path, locked_file_name, timeout):
         "Acquire the file lock"
-        
         flock_file_name = ''.join([ConfigFileManager.FLOCK_PREFIX,
                                    locked_file_name,
                                    ConfigFileManager.FLOCK_SUFFIX])
@@ -196,17 +225,17 @@ class ConfigFileManager(object):
         "File content as a list -- *including* md5-hexdigest line if present"
         return self._existing_lines
 
-        
+
     @property
     def modified_manually(self):
-        "Has the file been modified manually?"
+        "Has the file been modified manually? (digest-test failed?)"
         return self._modified_manually
 
 
     @property
     def writer(self):
-        "File-like object -- use it to append (only if not modified_manually)"
-        
+        '''A file-like object -- use it to append data to the file
+        (only if not self.modified_manually)'''
         if self._modified_manually and not self._override_manual:
             raise self.ModifiedManually("Config file has been modified "
                                         "manually, cannot change it")
@@ -215,30 +244,29 @@ class ConfigFileManager(object):
 
 
     def clear(self):
-        "Clear file content (only if not modified_manually)"
-        
+        "Clear the file content (only if not self.modified_manually)"
         if self._modified_manually and not self._override_manual:
             raise self.ModifiedManually("Config file has been modified "
                                         "manually, cannot change it")
         else:
             self._to_clear = True
             self._writer_io.close()
-            self._writer_io = StringIO()            
+            self._writer_io = StringIO()
 
 
     def finalize(self):
         "Release the file lock etc."
-        
         try:
             self._writer_io.close()
         finally:
             if self._flock_file is not None:
                 self._flock_file.close()
-    
+
 
     def commit(self):
-        "Confirm all the changes (write them actually into the config file)"
-        
+
+        "Confirm all changes (write them actually into the file)"
+
         to_write = self._writer_io.getvalue()
         if not (to_write or self._to_clear):
             return   # without any changes
@@ -253,9 +281,10 @@ class ConfigFileManager(object):
             hash_obj.update(content)
             new_digest = hash_obj.hexdigest()
 
-        tmp_dir = tempfile.mkdtemp()
+        tmp_subdir = tempfile.mkdtemp(dir=self.dir_path,
+                                      prefix=self.TMP_SUBDIR_PREFIX)
         try:
-            tmp_file_path = os.path.join(tmp_dir, self.file_name)
+            tmp_file_path = os.path.join(tmp_subdir, self.file_name)
             with open(tmp_file_path, 'w') as tmp_file:
                 tmp_file.write(content)
                 if self.use_digest:
@@ -265,18 +294,16 @@ class ConfigFileManager(object):
             os.chmod(tmp_file_path, self.mode)
             os.rename(tmp_file_path, self.file_path)
         finally:
-            shutil.rmtree(tmp_dir)
+            shutil.rmtree(tmp_subdir)
 
 
     def __enter__(self):
         "Context-manager implementation ('with' statement...)"
-                
         return self
 
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         "Context-manager implementation ('with' statement...)"
-        
         if exc_tb is None:
             # no error
             try:
@@ -290,11 +317,27 @@ class ConfigFileManager(object):
 
 
 #
-# Standard module init callable
+# Standard module post-init callable
 #
 
-def basic_mod_init(mod, full_name, logging_settings, mod_globals):
-    "Initialize the module logger and add custom globals"
+def basic_postinit(mod, full_name, logging_settings, mod_globals):
+
+    """Initialize the module logger and add custom globals
+
+    Arguments:
+    
+    * mod -- the Python module object;
+    
+    * full_name -- an absolute dot.separated.name;
+    
+    * logging_settings -- a dict with all or some of the keys:
+      'mod_logger_pattern', 'level', 'handlers', 'propagate',
+      'custom_mod_loggers' (see: the fragment of mtrpc.server
+      documentation about configuration file structure and content);
+      
+    * mod_globals -- a dict of variables to be set as module globals.
+
+    """
 
     # configure the module logger
     log_config = logging_settings.copy()
@@ -324,15 +367,23 @@ def basic_mod_init(mod, full_name, logging_settings, mod_globals):
 #
 
 def configure_logging(log, prev_log, log_handlers, log_config):
-    '''Configure logging for a particular logger, using given settings.
+
+    """Configure logging for a particular logger, using given settings.
 
     Arguments:
+    
     * log (logging.Logger instance) -- a new logger (to configure);
+    
     * prev_log (logging.Logger instance) -- the previous logger;
-    * log_handlers (list) -- auxiliary list of logger handlers being in use.
-    * log_config (dict) -- see e.g.:
-      mtrpc.server._interface.CONFIG_SECTION_FIELDS['logging_settings'];
-    '''
+    
+    * log_handlers -- auxiliary list of logger handlers being in use;
+    
+    * log_config -- a dict with all or some of the keys: 'level' (str),
+      'handlers' (dict), 'propagate' (bool); see: the fragment of
+      mtrpc.server documentation about configuration file structure
+      and content.
+
+    """
 
     while log_handlers:  # when restarting -- disable old handlers
         prev_log.removeHandler(log_handlers.pop())
@@ -350,23 +401,22 @@ def configure_logging(log, prev_log, log_handlers, log_config):
             HandlerClass = getattr(logging, class_name)
         except AttributeError:
             HandlerClass = getattr(logging.handlers, class_name)
-                                  
+
         kwargs = handler_props.get('kwargs', default_hprops['kwargs'])
         level = handler_props.get('level', default_hprops['level']).upper()
         format = handler_props.get('format', default_hprops['format'])
-                                   
+
         handler = HandlerClass(**kwargs_to_str(kwargs))
         handler.setLevel(getattr(logging, level))
         handler.setFormatter(logging.Formatter(format))
 
         log_handlers.append(handler)
         log.addHandler(handler)
-        
+
     log.debug('Logger %s configured', log.name)
 
 
-# (to overcome a problem that has been fixed in Python 2.6.5 -- issue #4978)
+# to overcome a problem fixed in Python 2.6.5; see Python issue tracker: #4978
 def kwargs_to_str(kwargs):
-    "Replace unicode-keys with str-keys in a dict"
-    
+    """Create a new dict from a dict, replacung unicode-keys with str-keys"""
     return dict((str(key), value) for key, value in kwargs.iteritems())

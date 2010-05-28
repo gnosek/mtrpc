@@ -2,27 +2,15 @@
     "rpc_tree_init": {
         "imports": ["mtrpc.server.sysmethods as system"],
         "paths": [
-            "server_example_methods.py as example",
-            "netservice_methods.py as netservices"
+            "server_example_methods.py as example"
         ],
-        "mod_init_kwargs": {
+        "postinit_kwargs": {
             "logging_settings": {
                 "handlers": [
                     {
                         "cls": "StreamHandler", 
                         "format": "%(asctime)s %(name)s:%(levelname)s @%(threadName)s: %(message)s", 
                         "kwargs": {}, 
-                        "level": "info"
-                    },
-                    {
-                        "cls": "RotatingFileHandler", 
-                        "format": "%(asctime)s %(name)s:%(levelname)s @%(threadName)s: %(message)s", 
-                        "kwargs": {
-                            "filename": "/var/log/mtrpc/example.log",
-                            "maxBytes": 10485760,
-                            "backupCount": 5,
-                            "encoding": "utf8"
-                        },
                         "level": "info"
                     }
                 ],
@@ -44,14 +32,16 @@
         "virtual_host": "/"
     }, 
     "bindings": [
-        ["rpc.megiteam.example", "#", "", ""]
+        ["rpc.friendly.exchange", "rk.usr.#", "", ""],
+        ["rpc.systemonly.exchange", "rk.usr.#", "{full_name}", "^(system(\\..*)?)?$"]
     ], 
     "exchange_types": {
-        "rpc.megiteam.example": "topic"
+        "rpc.friendly.exchange": "topic",
+        "rpc.systemonly.exchange": "topic"
     }, 
-    "manager_settings": {
-        "client_id": "rpc.megiteam.example"
-    },
+                "manager_settings": {
+                    "client_id": "rpc.megiteam.example"
+                },
     "manager_attributes": {}, 
     "responder_attributes": {},
     "logging_settings": {
@@ -61,17 +51,6 @@
                 "format": "%(asctime)s %(name)s:%(levelname)s @%(threadName)s: %(message)s", 
                 "kwargs": {}, 
                 "level": "info"
-            },
-            {
-                "cls": "RotatingFileHandler", 
-                "format": "%(asctime)s %(name)s:%(levelname)s @%(threadName)s: %(message)s", 
-                "kwargs": {
-                    "filename": "/var/log/mtrpc/example.log",
-                    "maxBytes": 10485760,
-                    "backupCount": 5,
-                    "encoding": "utf8"
-                },
-                "level": "info"
             }
         ], 
         "level": "info", 
@@ -80,8 +59,8 @@
     }, 
     "os_settings": {
         "daemon": false, 
-        "signal_actions": {"SIGHUP": "restart", "SIGTERM": "exit", "SIGINT": "exit"}, 
-        "stopping_timeout": 10, 
+        "signal_actions": {"SIGHUP": "restart", "SIGTERM": "exit"}, 
+        "sig_stopping_timeout": 30, 
         "umask": null, 
         "working_dir": null
     }

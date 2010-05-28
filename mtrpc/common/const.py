@@ -1,15 +1,66 @@
-"""MTRPC common constants"""
-
+# mtrpc/common/const.py
+#
 # Author: Jan Kaliszewski (zuo)
 # Copyright (c) 2010, MegiTeam
 
+"""MTRPC common constants:
+
+* Names of special attributes of modules/callables that define
+RPC-modules/methods:
+
+  * RPC_METHOD_LIST (module attribute name) -- a name of a sequence
+    (list/tuple) of method names (or a singular string being a method
+    name);
+
+  * RPC_MODULE_DOC (module attribute name) -- a name of a string
+    containing documentation of a particual RPC-module;
+
+  * RPC_TAGS (module of method-callable attribute name) -- a name of
+    a dict containint module tags (arbitrary keys and values to store
+    any special properties);
+
+  * RPC_POSTINIT (module attribute name) -- a name of a module postinit-
+    callable (to be called after RPC-module initialization, typically to
+    initialize custom module logger and globals);
+
+  * RPC_LOG (module attribute name) -- a name of a custom module logger
+    object (to set by the module postinit-callable);
+
+  * RPC_LOG_HANDLERS (module attribute name) -- a name of an auxiliary
+    logger handler list (to set by the module postinit-callable).
 
 
-# Special module attribute names
+* Names of RPC-method special keyword arguments that define access rules:
+
+  * ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, ACCESS_KEYHOLE_KWARG (see:
+  the fragment of mtrpc.server documentation about access key/keyhole
+  mechanism);
+
+  * ACC_KWARGS -- frozen set of there three names.
+
+
+* Various defaults:
+
+  * DEFAULT_RESP_EXCHANGE -- default name of AMQP exchange to be used to
+    send RPC-responses by server to client (via AMQP broker);
+
+  * DEFAULT_JSON_ENCODING -- default JSON encoding (for (de)serializing
+    RPC-requests and responses as well as parsing server configuration);
+
+  * DEFAULT_LOG_HANDLER_SETTINGS -- default server logger handler
+    settings (see: the fragment of mtrpc.server documentation about
+    configuration file structure and content).
+
+"""
+
+
+# Special attribute names
+# * get when the tree is being built:
 RPC_METHOD_LIST = '__rpc_methods__'
 RPC_MODULE_DOC = '__rpc_doc__'
 RPC_TAGS = '__rpc_tags__'
-RPC_INIT_CALLABLE = '__rpc_init__'
+RPC_POSTINIT = '__rpc_postinit__'
+# * set when the tree is being built:
 RPC_LOG = '__rpc_log__'
 RPC_LOG_HANDLERS = '__rpc_log_handlers__'
 
@@ -18,6 +69,7 @@ RPC_LOG_HANDLERS = '__rpc_log_handlers__'
 ACCESS_DICT_KWARG = '_access_dict'
 ACCESS_KEY_KWARG = '_access_key_patt'
 ACCESS_KEYHOLE_KWARG = '_access_keyhole_patt'
+
 ACC_KWARGS = frozenset((
         ACCESS_DICT_KWARG,
         ACCESS_KEY_KWARG,
@@ -26,11 +78,12 @@ ACC_KWARGS = frozenset((
 
 
 # Some defaults
-DEFAULT_RESP_EXCHANGE = 'amq.direct'
+#DEFAULT_RESP_EXCHANGE = 'MTRPCResponses'
+DEFAULT_RESP_EXCHANGE = 'amq.direct'  # !TODO! ustalic jak ma byc
 DEFAULT_JSON_ENCODING = 'utf-8'
 DEFAULT_LOG_HANDLER_SETTINGS = dict(
         cls='StreamHandler',
         kwargs={},
         level='info',
-        format='%(asctime)s %(name)s:%(levelno)s @%(threadName)s: %(message)s'
+        format='%(asctime)s %(name)s:%(levelname)s @%(threadName)s: %(message)s'
 )

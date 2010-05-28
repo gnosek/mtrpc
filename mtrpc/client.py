@@ -1,7 +1,47 @@
-"""MegiTeam-RPC (MTRPC) framework -- server part"""
-
+# mtrpc/client.py
+#
 # Author: Jan Kaliszewski (zuo)
 # Copyright (c) 2010, MegiTeam
+
+"""MegiTeam-RPC (MTRPC) framework -- the client part: simple RPC-proxy.
+
+A simple example:
+
+    from mtrpc.client import MTRPCProxy
+
+    with MTRPCProxy(
+            req_exchange='request_amqp_exchange',
+            req_rk_pattern='request_amqp_routing_key',
+            loglevel='info',
+            host="localhost:5672",
+            userid="guest",
+            password="guest",
+    ) as rpc:
+
+        routing_key_info = rpc.my_module.tell_the_rk()
+        rpc_tree_content = rpc.system.list_string('', deep=True)
+        add_result = rpc.my_module.add(1, 2)   # -> 3
+        
+        try:
+            div_result = rpc.my_module.my_submodule.div(10, 0)   # -> error
+        except ZeroDivisionError as exc:
+            div_result = 'ZeroDivisionError -- {0}'.format(exc)
+
+        print
+        print routing_key_info
+        print '\nAccessible RPC-modules and methods:', rpc_tree_content
+        print '\nAddition result:', add_result
+        print '\nDivision result:', div_result
+
+To run the above example, first start an AMQP broker and MTRPC server
+-- see the example in mtrpc.server module documentation [module docstring
+in mtrpc/server/__init__.py].
+
+For more information about MTRPCProxy constructor arguments
+-- see MTRPCProxy.__init__() documentation.
+
+"""
+
 
 
 from future_builtins import filter, map, zip
@@ -31,7 +71,8 @@ Response = namedtuple('Response', 'result error id')
 
 
 class _RPCModuleMethodProxy(object):
-    "Auxiliary automagic-callable-co-proxy class"
+
+    """Auxiliary automagic-callable-co-proxy class"""
 
     def __init__(self, rpc_proxy, full_name):
         self._rpc_proxy = rpc_proxy
@@ -53,13 +94,67 @@ class _RPCModuleMethodProxy(object):
         return bool(self._rpc_proxy)
 
 
+
+#
+# The RPC-proxy class
+#
+
 class MTRPCProxy(object):
-    "The actual MTRPC proxy class"
+
+    """The actual MTRPC proxy class.
+
+    Get RPC-modules as they were MTRPCProxy instance attributes;
+    call RPC-methods as their member functions.
+
+    """
 
     def __init__(self, req_exchange, req_rk_pattern,
                  resp_exchange=DEFAULT_RESP_EXCHANGE, custom_exceptions=None,
                  json_encoding=DEFAULT_JSON_ENCODING,
                  log=None, loglevel=None, **amqp_params):
+
+        """RPC-proxy initialization.
+
+        Arguments:
+
+        * req_exchange (str) -- name of AMQP exchange to be used to send
+          RPC-requests (obligatory argument);
+
+        * req_rk_pattern (str) -- pattern of routing key to be used to
+          send requests (obligatory argument); it may contain some of
+          the following fields to be substituted using string .format()
+          method:
+
+          * full_name -- full (absolute, dot-separated) RPC-method name;
+          * local_name -- local (rightmost) part of that name;
+          * parentmod_name -- full name without the local part;
+          * split_name -- full name as a list of its parts (strings);
+          * req_exchange -- see above: 'req_exchange' argument;
+          * resp_exchange -- see below: 'resp_exchange' argument;
+
+        * resp_exchange (str) -- name of AMQP exchange to be used to
+          receive RPC-responses (default --
+          see: mtrpc.common.const.DEFAULT_RESP_EXCHANGE);
+
+        * custom_exceptions (dict or None) -- a dictionary containing
+          your custom (additional) RPC-transportable exceptions; maps
+          class names to class objects; (default: None)
+
+        * json_encoding (str) -- json encoding for (de)serializing
+          RPC-requests and responses (default --
+          see: mtrpc.common.const.DEFAULT_JSON_ENCODING);
+
+        * log (logging.Logger instance or str or None) -- logger object
+          or name (default: None => standard "basic" logging
+          configuration, using the root logger);
+
+        * loglevel (str or None) -- 'debug', 'info', 'warning', 'error'
+          or 'critical' (default: None => default settings to be used);
+
+        * amqp_params -- dict of keyword arguments for AMQP.Connection(),
+          see amqplib.client_0_8.Connection.__init__() for details.
+
+        """
 
         self._req_exchange = req_exchange
         self._req_rk_pattern = req_rk_pattern  # may contain {fields} used in
@@ -104,7 +199,6 @@ class MTRPCProxy(object):
 
     def _close(self):
         "Close the proxy"
-        
         try:
             try:
                 self._amqp_channel.close()
@@ -115,6 +209,7 @@ class MTRPCProxy(object):
 
 
     def _logging_init(self, log, loglevel):
+
         "Set logger"
 
         if log is None:
@@ -129,20 +224,18 @@ class MTRPCProxy(object):
             if isinstance(loglevel, basestring):
                 loglevel = getattr(logging, loglevel.upper())
             self._log.setLevel(loglevel)
-            
+
 
 
     def _amqp_init(self, amqp_params):
-        'Init AMQP communication'
-        
+        "Init AMQP communication"
         self._log.info('Initializing AMQP channel and connection...')
         self._amqp_conn = amqp.Connection(**amqp_params)
         self._amqp_channel = self._amqp_conn.channel()
 
 
     def _amqp_close(self):
-        'Close AMQP communication'
-
+        "Close AMQP communication"
         self._log.info('Closing AMQP channel and connection...')
         try:
             try:
@@ -157,13 +250,14 @@ class MTRPCProxy(object):
 
 
     def _call(self, full_name, call_args, call_kwargs):
+
         "Remotely call a procedure (RPC-method)"
 
         all_args = itertools.chain(map(repr, call_args),
                                    ('{0}={1!r}'.format(key, val)
                                     for key, val in call_kwargs.iteritems()))
         self._log.info('* remote call: %s(%s)', full_name, ', '.join(all_args))
-        
+
         if self._closed:
             raise RPCClientError('MTRPCProxy instance is already closed')
 
@@ -177,12 +271,12 @@ class MTRPCProxy(object):
                                                  exchange=self._req_exchange,
                                                  routing_key=routing_key)
                 self._amqp_channel.wait()
-                
+
             finally:
                 response = self._response
                 self._response = None
                 self._amqp_channel.basic_cancel(resp_queue)
-                
+
             if response.id != resp_queue:
                 raise RPCClientError("It should not happen! RPC-response id "
                                      "{0!r} differs from RPC-request id {1!r}"
@@ -237,7 +331,7 @@ class MTRPCProxy(object):
         )
         if call_kwargs:
             request_dict['kwparams'] = call_kwargs
-            
+
         try:
             message_data = json.dumps(
                     request_dict,
@@ -251,7 +345,7 @@ class MTRPCProxy(object):
         except Exception:
             raise RPCClientError('Could not serialize request dict: {0!r}\n{1}'
                                  .format(request_dict, traceback.format_exc()))
-        
+
 
     def _prepare_routing_key(self, full_name):
         split_name = full_name.split('.')
@@ -274,7 +368,7 @@ class MTRPCProxy(object):
                 exctype_name = '<UNKNOWN!>'
                 exc_message = '<UNKNOWN!>'
                 raise Exception
-                
+
             try:
                 exctype = self._custom_exceptions[exctype_name]
             except KeyError:
@@ -282,7 +376,7 @@ class MTRPCProxy(object):
                     exctype = getattr(errors, exctype_name)
                 except AttributeError:
                     exctype = getattr(__builtin__, exctype_name)
-                    
+
         except Exception:
             raise RPCClientError(
                     'The response contains unknown/unproper '

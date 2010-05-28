@@ -1,9 +1,10 @@
 #!/usr/bin/env python
+#
+# Author: Jan Kaliszewski (zuo)
+# Copyright (c) 2010, MegiTeam
 
 """Unit tests for mtrpc.server.methodtree module"""
 
-# Author: Jan Kaliszewski (zuo)
-# Copyright (c) 2010, MegiTeam
 
 
 from future_builtins import filter, map, zip
@@ -21,10 +22,11 @@ from collections import namedtuple
 
 if __name__ == '__main__':
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    mtrpc_package_path = os.path.join(script_dir, '../..')
+    (mtrpc_package_path
+    ) = os.path.join(script_dir, os.path.pardir, os.path.pardir)
     if mtrpc_package_path not in sys.path:
         sys.path.insert(0, mtrpc_package_path)
-        
+
 from mtrpc.server import methodtree
 from mtrpc.common import errors
 
@@ -65,11 +67,11 @@ class Test_RPCObjectTags_class(unittest.TestCase):
 class Test_RPCMethod_class(unittest.TestCase):
 
     def setUp(self):
-        
+
         def callable1(a, b, c=None):
             "A docstring1"
             return a, b, c
-            
+
         def callable2(a, b, _access_dict,
                       _access_key_patt, _access_keyhole_patt):
             "A docstring2"
@@ -168,7 +170,7 @@ class Test_RPCMethod_class(unittest.TestCase):
 
     def test_err_warn(self):
         self.assertRaises(TypeError, methodtree.RPCMethod, self.not_callable)
-        
+
         self.assertEqual(len(self.warnings1), 0)
         self.assertEqual(len(self.warnings2), 0)
         self.assertEqual(len(self.warnings4), 0)
@@ -259,7 +261,7 @@ class Test_RPCModule_class(unittest.TestCase):
                         is methodtree.RPCObjectTags)
         self.assertTrue(type(self.rpc_module2.tags)
                         is methodtree.RPCObjectTags)
-        
+
         self.assertEqual(self.rpc_module1.doc, '')
         self.assertEqual(self.rpc_module1.tags, {})
         self.assertEqual(self.rpc_module1.help, 'Module: {name}')
@@ -280,7 +282,7 @@ class Test_RPCModule_class(unittest.TestCase):
         self.assertEqual(self.rpc_module1.help, 'Module: {name}'
                                                 '\n    A docstring1')
         self.assertEqual(self.rpc_module1.tags, {'x': 'y'})
-        
+
         self.rpc_module1.declare_doc_and_tags('A docstring1', {'x': 'y'})
         self.assertEqual(self.rpc_module1.doc, 'A docstring1')
         self.assertEqual(self.rpc_module1.help, 'Module: {name}'
@@ -337,7 +339,7 @@ class Test_RPCModule_class(unittest.TestCase):
                         is methodtree.RPCObjectTags)
         self.assertTrue(type(self.rpc_module2.tags)
                         is methodtree.RPCObjectTags)
-        
+
 
     def test_methods_submods_etc(self):
         method_dict = dict((name, methodtree.RPCMethod(callable_obj=func))
@@ -346,7 +348,7 @@ class Test_RPCModule_class(unittest.TestCase):
         sorted_method_names = sorted(method_dict)
         sorted_method_items = sorted(method_dict.iteritems())
         a_method_name = sorted_method_names[0]
-        
+
         submod_dict = dict((name, methodtree.RPCModule(doc=name))
                            for name in dir(sys))
         sorted_submod_names = sorted(submod_dict)
@@ -371,7 +373,7 @@ class Test_RPCModule_class(unittest.TestCase):
         self.assertTrue(self.rpc_module1._sorted_method_items is None)
         self.assertRaises(ValueError, self.rpc_module1.add_method,  # repeated name
                           a_method_name, method_dict[a_method_name])
-        self.assertRaises(ValueError, self.rpc_module1.add_method,  
+        self.assertRaises(ValueError, self.rpc_module1.add_method,
                           '', method_dict[a_method_name])            # empty name
         self.assertRaises(TypeError, self.rpc_module1.add_method,
                           'xxxxx', 'zzzzz')           # not an RPCMethod instance
@@ -496,7 +498,7 @@ class Test_RPCTree_class(unittest.TestCase):
             method.__doc__ = 'Docstring ' + nr
             setattr(method, methodtree.RPC_TAGS, {'nr': nr})
             return method
-            
+
         self.tree_fixture = (
                 ('a.meth2', cal()),
                 ('a.meth1', cal()),
@@ -542,15 +544,15 @@ class Test_RPCTree_class(unittest.TestCase):
             self.assertEqual(rpc_mod,
                              rpc_submods.setdefault(rpc_mod_name, rpc_mod))
             self.assertEqual(rpc_mod, self.rpc_tree[rpc_mod_name])
-            
+
         self.assertEqual(self.rpc_tree.get_rpc_module(''),
                          self.rpc_tree._root_module)
 
 
     def test_add_get_iter(self):
-        
+
         # adding and getting...
-        
+
         rpc_submods = {}
         rpc_methods = {}
         for name, callable_obj in self.tree_fixture:
@@ -577,7 +579,7 @@ class Test_RPCTree_class(unittest.TestCase):
                               in rpc_mod.loc_names2methods()))
              for rpc_mod_name, rpc_mod
              in sorted(rpc_submods.iteritems()))
-             
+
         all_names = list(itertools.chain.from_iterable(_all_names_tree))
         method_names = list(filter(lambda s: ('meth' in s), all_names))
         submod_names = list(sorted(rpc_submods))
@@ -731,7 +733,7 @@ class Test_RPCTree_class(unittest.TestCase):
                 )
 
         # iterations...
-        
+
         # whole tree
         self.assertEqual(list(self.rpc_tree.all_names(deep=True)),
                          all_names)
@@ -772,7 +774,7 @@ class Test_RPCTree_class(unittest.TestCase):
         root_submod_items = list(filter((lambda s: '.' not in s[0]), submod_items))
         self.assertEqual(list(filter((lambda s: '.' not in s[0]), all_items)),
                          root_submod_items)
-                         
+
         self.assertEqual(list(self.rpc_tree.all_names(deep=False)),
                          root_submod_names)
         self.assertEqual(list(self.rpc_tree.method_names(deep=False)),
@@ -804,12 +806,12 @@ class Test_RPCTree_class(unittest.TestCase):
         self.assertEqual(list(self.rpc_tree.submod_items(deep=False,
                                                          get_relative_names=True)),
                          root_submod_items)
-        
+
         for super_name in ('a', 'b', 'b.a', 'b.b', 'b.a.a', 'c'):
             # subtree...
             # [prepare]
             cut = len(super_name + '.')  # (for relative names)
-            
+
             s_all_names = list(name for name in all_names
                                if name.startswith(super_name + '.'))
             s_method_names = list(name for name in method_names
@@ -841,7 +843,7 @@ class Test_RPCTree_class(unittest.TestCase):
                              s_method_items)
             self.assertEqual(list(self.rpc_tree.submod_items(super_name, deep=True)),
                              s_submod_items)
-                             
+
             # ...relative names
             self.assertEqual(list(self.rpc_tree.all_names(super_name, deep=True,
                                                           get_relative_names=True)),
@@ -861,7 +863,7 @@ class Test_RPCTree_class(unittest.TestCase):
             self.assertEqual(list(self.rpc_tree.submod_items(super_name, deep=True,
                                                              get_relative_names=True)),
                              [(s[cut:], obj) for s, obj in s_submod_items])
-            
+
             # one level only...
             # [prepare]
             dot_number = super_name.count('.') + 1
@@ -910,13 +912,13 @@ class Test_RPCTree_class(unittest.TestCase):
             self.assertEqual(list(self.rpc_tree.submod_items(super_name, deep=False,
                                                              get_relative_names=True)),
                              [(s[cut:], obj) for s, obj in lev_submod_items])
-        
+
         # __iter__()
         self.assertEqual(list(self.rpc_tree), [''] + all_names)   # (with root module)
-        
+
         # __len__()
         self.assertEqual(len(self.rpc_tree), 1 + len(all_names))
-        
+
         # __contains__()
         self.assertTrue(all((name in self.rpc_tree) for name in [''] + all_names))
 
@@ -955,7 +957,6 @@ class Test_build_rpc_tree_function(unittest.TestCase):
     @classmethod
     def classes2modules(cls, obj):
         "Transform classes info Python modules (recursively)"
-        
         if isclass(obj):
             mod = types.ModuleType('RPCModule_{0}'.format(obj.__name__))
             mod.__dict__.update((name, cls.classes2modules(subobj))
@@ -971,7 +972,7 @@ class Test_build_rpc_tree_function(unittest.TestCase):
         class root:
             def nothing(): "not an RPC-method"
             class a:
-                nothing = 3  
+                nothing = 3
                 class b:
                     not_anything_special = "Tralala"
                     class c:
@@ -985,7 +986,7 @@ class Test_build_rpc_tree_function(unittest.TestCase):
                         class ggg: "not an RPC-module"
                 class h:
                     class gg: "not an RPC-module"
-                class i: "not an RPC-module"                        
+                class i: "not an RPC-module"
             class c:
                 __rpc_doc__ = 'module c'
                 __rpc_methods__ = 'x.y.meth1', 'x.y.meth2'
@@ -1051,7 +1052,7 @@ class Test_build_rpc_tree_function(unittest.TestCase):
                                 def meth2(): "method ...2"
                         class h:
                             hh = "nothing special"
-        
+
         self.root = root
         self.Mod = Mod = namedtuple('Mod', 'doc tags')
         self.Method = Method = namedtuple('Method', 'doc tags number_of_args')
@@ -1061,7 +1062,7 @@ class Test_build_rpc_tree_function(unittest.TestCase):
                 ('a.b.c', Mod('module a.b.c', {})),
                 ('a.b.c.meth1', Method('method a.b.c.1', {}, 1)),
                 ('a.b.c.meth2', Method('method a.b.c.2', {}, 2)),
-                
+
                 ('b', Mod('', {})),
                 ('b.meth1', Method("method b.1", {}, 2)),
                 ('b.meth2', Method("method b.2", {}, 3)),
@@ -1132,12 +1133,12 @@ class Test_build_rpc_tree_function(unittest.TestCase):
         self.root.a.b.__rpc_methods__ = 'bb*'  # '*' could be only at the end
         py_root = self.classes2modules(self.root)
         self.assertRaises(ValueError, methodtree.build_rpc_tree, py_root)
-        
+
     def test_err__not_a_mod_declared_as_mod(self):
         self.root.a.__rpc_methods__ = 'nothing.*'
         py_root = self.classes2modules(self.root)
         self.assertRaises(TypeError, methodtree.build_rpc_tree, py_root)
-        
+
     def test_err__no_such_method_warning(self):
         self.root.a.b.c.__rpc_methods__ += ('ghost',)
         py_root = self.classes2modules(self.root)
@@ -1145,7 +1146,7 @@ class Test_build_rpc_tree_function(unittest.TestCase):
             warnings.filterwarnings('error', category=methodtree.LogWarning)
             self.assertRaises(methodtree.LogWarning,
                               methodtree.build_rpc_tree, py_root)
-        
+
     def test_err__cyclic_ref_warning(self):
         py_root = self.classes2modules(self.root)
         py_root.c.x.y.x = py_root.c.x
@@ -1153,18 +1154,18 @@ class Test_build_rpc_tree_function(unittest.TestCase):
             warnings.filterwarnings('error', category=methodtree.LogWarning)
             self.assertRaises(methodtree.LogWarning,
                               methodtree.build_rpc_tree, py_root)
-        
+
     def test_normal_build_with_ignored_warnings(self):
         # no such methods:
         self.root.a.b.c.__rpc_methods__ += ('ghost', 'x')
         py_root = self.classes2modules(self.root)
         # cyclic ref:
         py_root.c.x.y.x = py_root.c.x
-        
+
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=methodtree.LogWarning)
             rpc_tree = methodtree.build_rpc_tree(py_root)
-        
+
         expected_items = iter(self.expected_items)
         for i, rpc_item in enumerate(rpc_tree.all_items(deep=True), 1):
             name, obj = rpc_item
