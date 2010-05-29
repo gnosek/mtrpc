@@ -34,7 +34,7 @@ in version 0.8 -- as the transport protocol;
 
 * JSON-RPC protocol (see: http://json-rpc.org/) in version 1.0 with some
 extensions and limitations (see server subpackage documentation) -- as
-the RPC protocol.
+the actual RPC protocol.
 
 It depends on py-amqplib library (tested with version 0.6.1)
 -- see: http://code.google.com/p/py-amqplib/

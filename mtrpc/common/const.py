@@ -78,8 +78,7 @@ ACC_KWARGS = frozenset((
 
 
 # Some defaults
-#DEFAULT_RESP_EXCHANGE = 'MTRPCResponses'
-DEFAULT_RESP_EXCHANGE = 'amq.direct'  # !TODO! ustalic jak ma byc
+DEFAULT_RESP_EXCHANGE = 'amq.direct'
 DEFAULT_JSON_ENCODING = 'utf-8'
 DEFAULT_LOG_HANDLER_SETTINGS = dict(
         cls='StreamHandler',

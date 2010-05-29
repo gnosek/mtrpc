@@ -90,11 +90,10 @@ class ConfigFileManager(object):
 
         * comment_indicator (str) -- keyword argument value for
           digest_line_start_pattern.format() (default: '#');
-          may be None to disable digest support;  [!TODO! moze lepiej w tym celu digest_line_start_pattern=None???]
 
         * digest_line_start_pattern (str) -- pattern of the beginning of
           the (last) line including file's md5-hexdigest (default:
-          '{comment_indicator} md5:');
+          '{comment_indicator} md5:'); may be None to disable digest support;
 
         * path_field_chars (str) -- legal characters in path parts, important
           for security (default: ConfigFileManager.DEFAULT_PATH_FIELD_CHARS);
@@ -144,12 +143,12 @@ class ConfigFileManager(object):
                                                   self.file_name,
                                                   timeout=flocking)
         # digest line start pattern...
-        if comment_indicator is not None:
-            self.digest_line_start = digest_line_start_pattern.format(
-                                          comment_indicator=comment_indicator)
-            self.use_digest = True
+        if digest_line_start_pattern is not None:
+            (self.digest_line_start
+            ) = digest_line_start_pattern.format(comment_indicator
+                                                 =comment_indicator)
         else:
-            self.use_digest = False
+            self.digest_line_start = None   # digest checking disabled
 
         # ignore manual modifications?
         self._override_manual = override_manual
@@ -168,7 +167,7 @@ class ConfigFileManager(object):
             else:
                 raise
         else:
-            if comment_indicator is None:
+            if self.digest_line_start is None:
                 self._existing_content = '\n'.join(self._existing_lines + [''])
                 self._modified_manually = False
             elif (self._existing_lines and self._existing_lines[-1].startswith(
@@ -276,7 +275,7 @@ class ConfigFileManager(object):
         if not content.endswith('\n'):
             content = ''.join([content, '\n'])
 
-        if self.use_digest:
+        if self.digest_line_start is not None:
             hash_obj = hashlib.md5()
             hash_obj.update(content)
             new_digest = hash_obj.hexdigest()
@@ -287,7 +286,7 @@ class ConfigFileManager(object):
             tmp_file_path = os.path.join(tmp_subdir, self.file_name)
             with open(tmp_file_path, 'w') as tmp_file:
                 tmp_file.write(content)
-                if self.use_digest:
+                if self.digest_line_start is not None:
                     tmp_file.write(self.digest_line_start)
                     tmp_file.write(new_digest)
             os.chown(tmp_file_path, self.uid, self.gid)
