@@ -275,7 +275,9 @@ class AMQPClientServiceThread(ServiceThread):
         while True:
             self.log.info('Connecting to AMQP broker at %s...', host_descr)
             try:
-                return amqp.Connection(**amqp_params)
+                conn = amqp.Connection(**amqp_params)
+                utils.setkeepalives(conn.transport.sock)
+                return conn
             except Exception as exc:
                 self.log.warning('Connection failed')
                 self.log.debug('Exception info:', exc_info=True)

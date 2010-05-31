@@ -15,6 +15,7 @@ import os
 import os.path
 import pwd
 import shutil
+import socket
 import string
 import tempfile
 import time
@@ -370,3 +371,13 @@ def kwargs_to_str(kwargs):
     "Replace unicode-keys with str-keys in a dict"
     
     return dict((str(key), value) for key, value in kwargs.iteritems())
+
+def setkeepalives(sck, enabled=True, keepcnt=5, keepintvl=120, keepidle=300):
+    if enabled:
+        sck.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        sck.setsockopt(socket.SOL_TCP, socket.TCP_KEEPCNT, keepcnt)
+        sck.setsockopt(socket.SOL_TCP, socket.TCP_KEEPINTVL, keepintvl)
+        sck.setsockopt(socket.SOL_TCP, socket.TCP_KEEPIDLE, keepidle)
+    else:
+        sck.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 0)
+
