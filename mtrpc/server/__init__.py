@@ -340,40 +340,42 @@ First, the Python modules specified in `paths' and `imports' are imported
 (together with any submodules imported by them and their submodules...).
 
 Then, the RPC-tree is being built on their basis (recursively, starting
-with the paths/imports-specified modules) in such a way:
+with the paths/imports-specified modules) in the following way:
 
-1. A Python module is examined for presence of special attributes which
+1. A Python module is examined for presence of special attributes whose
    names are equal to the constants defined in mtrpc.common.const
-   as RPC_* variables. These special attributes are:
+   as RPC_... variables. These special attributes are:
    
    * __rpc_methods__ -- a sequence (e.g. list) of names referring to
-     member functions (or other callables) that define RPC-methods; its
-     items can also be:
+     member functions (or other callables) that define RPC-methods; the
+     sequence can also include:
      
      * '*' string symbol -- meaning that all the module public functions
-       (those included in __all__ sequence or -- if there is no __all__
-       attribute -- those not-starting with '_') define RPC-methods,
+       (those whose names are included in __all__ sequence or -- if there
+       is no __all__ attribute -- those whose names do not start with '_')
+       define RPC-methods,
        
-     * dot-separated names refering to submodules callable members (e.g.
+     * dot-separated names refering to submodule callable members (e.g.
        "submod.submod.my_function" or even "submod.submod.*");
        
      __rpc_methods__ attribute can also be a string -- then it will be
      treated as a sequence including that string as the only element;
 
-   * __rpc_doc__ -- the RPC-module documentation string (separated from
-     the Python module documentation string);
+   * __rpc_doc__ -- RPC-module documentation string (independent of the
+     Python module documentation string);
    
-   * __rpc_tags__ -- a dictionary with arbitrary items that will become
+   * __rpc_tags__ -- a dictionary with arbitrary items, which becomes
      the `tags' attribute of the RPC-module (a mapping containing any
      additional information useful for the framework code or your code);
      
-   * __rpc_postinit__ -- the RPC-module post-init-callable (see below).
+   * __rpc_postinit__ -- the RPC-module post-init-callable (see Pt 3
+     below).
 
-   If the Python module has any of these four attributes -- the
-   corresponding RPC-module is being created and added to its parent
-   RPC-module and to the RPC-tree.
+   Only if the Python module has any of these four above-mentioned
+   attributes -- is the corresponding RPC-module created and added to its
+   parent RPC-module and to the RPC-tree.
 
-2. __rpc_tags__ and __rpc_doc__ are being turned into the `tags' and `doc'
+2. __rpc_tags__ and __rpc_doc__ are turned into the `tags' and `doc'
    RPC-module attributes.
 
 3. So called **post-init mechanism** is applied:
