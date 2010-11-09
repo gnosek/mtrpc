@@ -1,0 +1,23 @@
+{
+    "rpc_tree_init": {
+        "imports": ["mtrpc.server.sysmethods as system"],
+        "paths": ["my_module.py"]
+    }, 
+    "amqp_params": {
+        "host": "localhost:5672",
+        "userid": "guest",
+        "password": "guest",
+        "virtual_host": "/"
+    }, 
+    "bindings": [
+        ["request_amqp_exchange", "request_amqp_routing_key", "", ""]
+    ], 
+    "os_settings": {
+        "daemon": false, 
+        "signal_actions": {
+            "SIGHUP": "restart",
+            "SIGTERM": "exit"
+        }, 
+        "sig_stopping_timeout": 45
+    }
+}

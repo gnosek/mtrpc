@@ -7,9 +7,11 @@ import time
 from mtrpc.server import MTRPCServerInterface
 
 
-CONFIG_PATH = 'server_example_conf.json'   # (<- look at that file)
+CONFIG_PATH = 'server_example_conf.json'
+
 
 cmdline_args = set(sys.argv[1:])
+
 # loop mode/non-loop mode * daemon/non-daemon mode == four possibilities :-)
 loop_mode = ('-l' in cmdline_args) or ('--loop-mode' in cmdline_args)
 force_daemon = ('-d' in cmdline_args) or ('--daemon' in cmdline_args)
