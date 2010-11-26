@@ -714,7 +714,7 @@ class RPCManager(AMQPClientServiceThread):
                 props = self._queues2bindings[queue]  # binding properties
                 self.amqp_channel.queue_declare(queue=queue,
                                                 durable=True,
-                                                auto_delete=False)
+                                                auto_delete=True)
                 (exchange_type
                 ) = self._exchange_types.get(props.exchange,
                                              self.default_exchange_type)
