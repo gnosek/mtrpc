@@ -1147,9 +1147,8 @@ class RPCTaskThread(threading.Thread):
                 exc = RPCInternalServerError('Internal server error')
 
             if exc_type is None:
-                self.log.debug('Calling RPC-method %r with user params %r '
-                               'and user kwparams %r...', request.method,
-                               request.params, request.kwparams)
+                self.log.info('Calling %s%s', request.method,
+                               rpc_method.format_args(request.params, request.kwparams))
                 try:
                     result = rpc_method(# the actual arguments (params):
                                         args=request.params,
@@ -1201,8 +1200,8 @@ class RPCTaskThread(threading.Thread):
                     response_dict = dict(result=result,
                                          error=None,
                                          id=request.id)
-                    self.log.debug('%r RPC-method call completed',
-                                   request.method)
+                    self.log.info('%s call completed: %s',
+                                   request.method, rpc_method.format_result(result))
 
             if exc_type is not None:
                 try:

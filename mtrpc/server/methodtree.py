@@ -24,6 +24,7 @@ import abc
 import inspect
 import itertools
 import re
+import repr
 import string
 import textwrap
 import traceback
@@ -296,6 +297,35 @@ class RPCMethod(RPCObject, Callable):
                                          MutableSet,
                                          MutableMapping)))
 
+    def format_args(self, args, kwargs):
+        "Format arguments in a way suitable for logging"
+
+        spec = inspect.getargspec(self.callable_obj)
+        defaults = list(spec.defaults or ())
+        reqd_count = len(spec.args) - len(defaults)
+        real_args = [None] * reqd_count + defaults
+        real_args[0:len(args)] = args
+        for i, arg in enumerate(spec.args):
+            if 'passw' in arg:
+                real_args[i] = '***'
+            elif arg in kwargs:
+                real_args[i] = kwargs[arg]
+
+        spec_args = [a for a in spec.args if a not in ACC_KWARGS]
+        real_args[len(spec_args):] = []
+        r = repr.Repr()
+        r.maxstring = 60
+        r.maxother = 60
+        real_args = [r.repr(a) for a in real_args]
+
+        return inspect.formatargspec(spec_args, spec.varargs,
+            spec.keywords, real_args, formatvalue=lambda v: '='+v)
+
+    def format_result(self, result):
+        r = repr.Repr()
+        r.maxstring = 60
+        r.maxother = 60
+        return r.repr(result)
 
     def __call__(self, args, kwargs,
                  access_dict, access_key_patt, access_keyhole_patt):
