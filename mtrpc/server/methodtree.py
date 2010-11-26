@@ -24,7 +24,6 @@ import abc
 import inspect
 import itertools
 import re
-import repr
 import string
 import textwrap
 import traceback
@@ -33,6 +32,7 @@ import warnings
 from collections import defaultdict, \
                         Callable, Hashable, Mapping, \
                         MutableSequence, MutableSet, MutableMapping
+from repr import Repr
 
 from ..common.errors import *
 from ..common.const import *
@@ -313,7 +313,7 @@ class RPCMethod(RPCObject, Callable):
 
         spec_args = [a for a in spec.args if a not in ACC_KWARGS]
         real_args[len(spec_args):] = []
-        r = repr.Repr()
+        r = Repr()
         r.maxstring = 60
         r.maxother = 60
         real_args = [r.repr(a) for a in real_args]
@@ -322,7 +322,7 @@ class RPCMethod(RPCObject, Callable):
             spec.keywords, real_args, formatvalue=lambda v: '='+v)
 
     def format_result(self, result):
-        r = repr.Repr()
+        r = Repr()
         r.maxstring = 60
         r.maxother = 60
         return r.repr(result)
