@@ -172,9 +172,20 @@ def zip_objects(a, b):
 def process_logical_line(props, ll):
     if ll:
         key, value = ll.split(':', 1)
-        value = json.loads(value)
-        props = zip_objects(props, walk(key, value))
-    return props
+        try:
+            _value = json.loads(value)
+        except ValueError as exc:
+            try:
+                _value = json.loads(ll)
+            except ValueError as exc:
+                raise ValueError("malformed JSON/Prop: {0}\n{1}".format(exc, ll))
+            else:
+                new_props = _value
+        else:
+            new_props = walk(key, _value)
+        return zip_objects(props, new_props)
+    else:
+        return props
 
 def load_props(f):
     logical_line = ''
@@ -182,8 +193,8 @@ def load_props(f):
     for line in f:
         if len(line) == 0 or line.startswith('#'):
             continue
-        elif line[0] in string.whitespace:
-            logical_line = logical_line + '\n' + line
+        elif line[0] in string.whitespace + '}':
+            logical_line = logical_line + line
         else:
             props = process_logical_line(props, logical_line)
             logical_line = line
