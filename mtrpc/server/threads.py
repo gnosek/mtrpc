@@ -374,6 +374,7 @@ class AMQPClientServiceThread(ServiceThread):
         self.log.info('Initializing AMQP channel and connection...')
         self.amqp_conn = self._new_amqp_conn(self._amqp_params)
         self.amqp_channel = self.amqp_conn.channel()
+        self.amqp_channel.basic_qos(prefetch_size=0, prefetch_count=1, a_global=False)
         self._is_connected = True
 
 
