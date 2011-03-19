@@ -1,11 +1,20 @@
 #!/usr/bin/python
 
 import json
-import re
 import string
 import doctest
 
-ELEMENT_RX = re.compile(r'^(?P<key>[a-zA-Z0-9_]+)(?:\[(?P<index>\d+)\])?$')
+STATE_INIT = 1
+STATE_ESCAPED = 2
+STATE_OPEN_INDEX = 3
+STATE_INDEX_DIGIT = 4
+STATE_CLOSE_INDEX = 5
+STATE_IN_KEY = 6
+STATE_AFTER_ESCAPE = 7
+STATE_ESCAPED_BACKSLASH = 8
+
+identifier_chars = set(string.ascii_letters + string.digits + '_')
+digits = set(string.digits)
 
 def get_path_element(path):
     """Split dotted path into head and tail
@@ -15,19 +24,105 @@ def get_path_element(path):
     ('foo', None, '')
     >>> get_path_element('foo[3].bar.baz')
     ('foo', 3, 'bar.baz')
+    >>> get_path_element('{foo}[3]')
+    ('foo', 3, '')
     >>> get_path_element('foo[3]')
     ('foo', 3, '')
+    >>> get_path_element('{foo.bar.baz}.quux.quuux')
+    ('foo.bar.baz', None, 'quux.quuux')
+    >>> get_path_element('{foo\{bar\}baz}.quux.quuux')
+    ('foo{bar}baz', None, 'quux.quuux')
+    >>> get_path_element('qx{foo.bar.baz}.quux.quuux')
+    ('qx', None, '{foo.bar.baz}.quux.quuux')
     """
-    elts = path.split('.')
-    elt = elts[0]
-    remainder = '.'.join(elts[1:])
-    m = ELEMENT_RX.match(elt)
-    if not m:
-        raise ValueError('Invalid path element {0}'.format(elt))
-    try:
-        return m.group('key'), int(m.group('index')), remainder
-    except:
-        return m.group('key'), None, remainder
+
+    i = None
+    c = None
+
+    def _unexpected():
+        raise ValueError('Parse error at or near {0}: unexpected {1}'.format(path[i:], c))
+
+    key = []
+    index = None
+    state = STATE_INIT
+    for i, c in enumerate(path):
+        if state == STATE_INIT:
+            if c == '{':
+                state = STATE_ESCAPED
+            elif c in identifier_chars:
+                key.append(c)
+                state = STATE_IN_KEY
+            else:
+                _unexpected()
+
+        elif state == STATE_IN_KEY:
+            if c == '.':
+                break
+            elif c == '[':
+                state = STATE_OPEN_INDEX
+                index = 0
+            elif c == '{':
+                i = i-1
+                break
+            elif c in identifier_chars:
+                key.append(c)
+            else:
+                _unexpected()
+
+        elif state == STATE_ESCAPED:
+            if c == '}':
+                state = STATE_AFTER_ESCAPE
+            elif c == '{':
+                # only for symmetry with forced escaping of }
+                _unexpected()
+            elif c == '\\':
+                state = STATE_ESCAPED_BACKSLASH
+            else:
+                key.append(c)
+
+        elif state == STATE_ESCAPED_BACKSLASH:
+            key.append(c)
+            state = STATE_ESCAPED
+
+        elif state == STATE_AFTER_ESCAPE:
+            if c == '.':
+                break
+            elif c == '[':
+                state = STATE_OPEN_INDEX
+                index = 0
+            elif c == '{':
+                i = i-1
+                break
+            else:
+                _unexpected()
+
+        elif state == STATE_OPEN_INDEX:
+            if c in digits:
+                index = int(c)
+                state = STATE_INDEX_DIGIT
+            else:
+                _unexpected()
+
+        elif state == STATE_INDEX_DIGIT:
+            if c in digits:
+                index = 10 * index + int(c)
+            elif c == ']':
+                state = STATE_CLOSE_INDEX
+            else:
+                _unexpected()
+
+        elif state == STATE_CLOSE_INDEX:
+            if c == '.':
+                break
+            elif c == '{':
+                i = i-1
+                break
+            else:
+                _unexpected()
+
+    key = ''.join(key)
+    remainder = path[i+1:]
+    return key, index, remainder
 
 def extend_array(array, length):
     """Pad array to @length
@@ -166,7 +261,7 @@ def zip_objects(a, b):
     elif ta == dict:
         return zip_dicts(a, b)
     else:
-        raise TypeError('Cannot zip that')
+        raise TypeError('Cannot zip {0!r} and {1!r}'.format(a, b))
 
 
 def process_logical_line(props, ll):
