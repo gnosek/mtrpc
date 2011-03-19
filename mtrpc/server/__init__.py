@@ -833,14 +833,15 @@ class MTRPCServerInterface(object):
 
 
     @classmethod
-    def configure(cls, config_path,
+    def configure(cls, config_path=None, config_dict=None,
                   config_encoding=DEFAULT_JSON_ENCODING,
                   force_daemon=False,
                   default_postinit_callable=utils.basic_postinit):
 
         """Get the instance, load config + configure (don't start) the server.
 
-        Obligatory argument: config_path -- path of the config file.
+        Obligatory argument: config_path -- path of the config file OR
+                             config_dict -- parsed config
 
         Optional arguments:
 
@@ -854,9 +855,15 @@ class MTRPCServerInterface(object):
 
         """
 
+        if (config_path is None) == (config_dict is None):
+            raise ValueError('Either config_path or config_dict is required; ({0!r}, {1!r})'.format(config_path, config_dict))
+
         try:
             self = cls.get_instance()
-            self.load_config(config_path, config_encoding)
+            if config_path is not None:
+                self.load_config(config_path, config_encoding)
+            else:
+                self.config = self.validate_and_complete_config(config_dict)
             self.configure_logging()
             self.do_os_settings(force_daemon=force_daemon)
             self.load_rpc_tree(default_postinit_callable
@@ -870,7 +877,7 @@ class MTRPCServerInterface(object):
 
 
     @classmethod
-    def configure_and_start(cls, config_path,
+    def configure_and_start(cls, config_path=None, config_dict=None,
                             config_encoding=DEFAULT_JSON_ENCODING,
                             force_daemon=False,
                             default_postinit_callable=utils.basic_postinit,
@@ -900,8 +907,8 @@ class MTRPCServerInterface(object):
         """
 
         while True:
-            self = cls.configure(config_path, config_encoding, force_daemon,
-                                 default_postinit_callable)
+            self = cls.configure(config_path, config_dict, config_encoding,
+                                 force_daemon, default_postinit_callable)
             try:
                 self.start(final_callback=final_callback)
             except:

@@ -9,6 +9,7 @@ from optparse import OptionParser
 sys.path.insert(0, '/usr/local/megiteam/python2.6')
 
 from mtrpc.server import MTRPCServerInterface
+from mtrpc.server.config import loader
 
 dir, name = os.path.split(sys.argv[0])
 
@@ -27,13 +28,13 @@ parser.add_option('-c', '--config', dest='config', default=CONFIG_PATH, help='Pa
 
 loop_mode = o.loop
 force_daemon = o.daemon
-config_path = o.config
+config_dict = loader.load_props(open(o.config))
 
 if loop_mode:
     final_callback = MTRPCServerInterface.restart_on
     # (^ to restart the server when the service threads are stopped)
     MTRPCServerInterface.configure_and_start(
-            config_path,
+            config_dict=config_dict,
             force_daemon=force_daemon,
             loop_mode=True,       # <- stay in the inner server loop
             final_callback=final_callback,
@@ -47,7 +48,7 @@ else:
         while True:
             if restart_lock.acquire(False):   # (<- non-blocking)
                 server = MTRPCServerInterface.configure_and_start(
-                        config_path,
+                        config_dict=config_dict,
                         force_daemon=force_daemon,
                         loop_mode=False,  # <- return immediately
                         final_callback=final_callback,

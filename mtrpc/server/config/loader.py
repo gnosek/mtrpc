@@ -193,7 +193,7 @@ def load_props(f):
     for line in f:
         if len(line) == 0 or line.startswith('#'):
             continue
-        elif line[0] in string.whitespace + '}':
+        elif line[0] in string.whitespace + '}]':
             logical_line = logical_line + line
         else:
             props = process_logical_line(props, logical_line)
