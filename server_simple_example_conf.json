@@ -11,7 +11,10 @@
     }, 
     "bindings": [
         ["request_amqp_exchange", "request_amqp_routing_key", "", ""]
-    ], 
+    ],
+    "manager_settings": {
+        "client_id": "example"
+    },
     "os_settings": {
         "daemon": false, 
         "signal_actions": {
