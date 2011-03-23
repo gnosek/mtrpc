@@ -38,7 +38,7 @@ from subprocess import Popen, PIPE
 
 def call_git_describe(abbrev=4):
     try:
-        p = Popen(['git', 'describe', '--abbrev=%d' % abbrev],
+        p = Popen(['git', 'describe', '--tags', '--abbrev=%d' % abbrev],
                   stdout=PIPE, stderr=PIPE)
         p.stderr.close()
         line = p.stdout.readlines()[0]
