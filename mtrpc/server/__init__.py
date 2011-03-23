@@ -566,6 +566,7 @@ import warnings
 from . import threads
 from . import methodtree
 from . import _daemon_recipe
+from .config import loader
 from ..common import utils
 from ..common.const import DEFAULT_JSON_ENCODING, DEFAULT_LOG_HANDLER_SETTINGS
 
@@ -953,7 +954,7 @@ class MTRPCServerInterface(object):
         "Load the config from a JSON file; check, adjust, return as a dict"
         try:
             with open(config_path) as config_file:
-                config = json.load(config_file, encoding=config_encoding)
+                config = loader.load_props(config_file)
                 config = self.validate_and_complete_config(config)
 
         except Exception:
