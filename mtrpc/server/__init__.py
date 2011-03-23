@@ -924,8 +924,7 @@ class MTRPCServerInterface(object):
             else:
                 # loop mode: wait for a restart/OS signals
                 try:
-                    while not self._restart:
-                        time.sleep(0.5)
+                    signal.pause()
                 except SystemExit:  # probably raised by a signal handler
                     self.log.debug('System exit...')
                     raise
