@@ -7,4 +7,10 @@ setup(
     name='mtrpc',
     version=get_git_version(),
     packages=find_packages(exclude=['mtrpc.test']),
+    install_requires=['amqplib'],
+    author='MegiTeam',
+    author_email='admin@megiteam.pl',
+    description='Easy JSONRPC over AMQP',
+    license='MIT',
+    keywords='mtrpc rpc json jsonrpc amqp',
 )
