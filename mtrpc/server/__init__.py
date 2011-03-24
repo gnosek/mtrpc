@@ -28,22 +28,22 @@ A simple example
         "rpc_tree_init": {
             "imports": ["mtrpc.server.sysmethods as system"],
             "paths": ["my_module.py"]
-        }, 
+        },
         "amqp_params": {
             "host": "localhost:5672",
             "userid": "guest",
             "password": "guest",
             "virtual_host": "/"
-        }, 
+        },
         "bindings": [
             ["request_amqp_exchange", "request_amqp_routing_key", "", ""]
-        ], 
+        ],
         "os_settings": {
-            "daemon": false, 
+            "daemon": false,
             "signal_actions": {
                 "SIGHUP": "restart",
                 "SIGTERM": "exit"
-            }, 
+            },
             "sig_stopping_timeout": 45
         }
     }
@@ -136,7 +136,7 @@ Basic terminology
 * full name -- an absolute.dot.separated.name of an RPC-module or
   RPC-method e.g. 'my_module.my_submodule.div'; to obtain an RPC-module
   or RPC-method from the RPC-tree, you need to use the full name as a key;
-  
+
 * local name -- the rightmost part of a full name, e.g. 'div'; to obtain
   an RPC-module or RPC-method from its parent RPC-module, you need to use
   the local name as a key;
@@ -166,7 +166,7 @@ items:
 * "rpc_tree_init": a dict (an obligatory item) -- containing:
 
   * "paths": a list (empty by default)
-  
+
   * "imports": a list (empty by default)
 
   -- both are lists of strings specifying Python modules that define
@@ -236,7 +236,7 @@ items:
       names to dicts mapping name of variables to their values (these
       variables will be set as global attributes of the particular Python
       module);
-      
+
 * amqp_params: a dict (an obligatory item), containing keyword arguments
   for AMQP Connection(), is to be used by the manager and the responder
   (see the amqplib.client_0_8.connection.Connection.__init__() signature
@@ -260,7 +260,7 @@ items:
 * manager_attributes: a dict (empty by default) of additional manager
   object attributes (which, in particular, can override existing
   instance attributes or default RPCManager class attributes);
-  
+
 * responder_attributes: a dict (empty by default) of additional responder
   object attributes (which, in particular, can override existing
   instance attributes or default RPCResponder class attributes);
@@ -345,29 +345,29 @@ with the paths/imports-specified modules) in the following way:
 1. A Python module is examined for presence of special attributes whose
    names are equal to the constants defined in mtrpc.common.const
    as RPC_... variables. These special attributes are:
-   
+
    * __rpc_methods__ -- a sequence (e.g. list) of names referring to
      member functions (or other callables) that define RPC-methods; the
      sequence can also include:
-     
+
      * '*' string symbol -- meaning that all the module public functions
        (those whose names are included in __all__ sequence or -- if there
        is no __all__ attribute -- those whose names do not start with '_')
        define RPC-methods,
-       
+
      * dot-separated names refering to submodule callable members (e.g.
        "submod.submod.my_function" or even "submod.submod.*");
-       
+
      __rpc_methods__ attribute can also be a string -- then it will be
      treated as a sequence including that string as the only element;
 
    * __rpc_doc__ -- RPC-module documentation string (independent of the
      Python module documentation string);
-   
+
    * __rpc_tags__ -- a dictionary with arbitrary items, which becomes
      the `tags' attribute of the RPC-module (a mapping containing any
      additional information useful for the framework code or your code);
-     
+
    * __rpc_postinit__ -- the RPC-module post-init-callable (see Pt 3
      below).
 
@@ -384,11 +384,11 @@ with the paths/imports-specified modules) in the following way:
    referred by `default_postinit_callable' (see above) -- is being called
    with those of the following keyword arguments that its signature
    contains:
-   
+
    * mod -- the Python module,
    * full_name -- the RPC-module full name,
    * rpc_tree -- the whole RPC-tree object,
-   
+
    *plus* all the arguments defined as `postinit_kwargs' (see above).
 
    The basic implementation of post-init callable (the default for
@@ -436,7 +436,7 @@ have attributes that will be used by MTRPC:
 
 * __doc__, i.e. the good old Python docstring -- will be turned into the
   RPC-method docstring (RPC-method `doc' attribute);
-  
+
 * __mtrpc_tags__, a dictionary with arbitrary items -- will become the
   `tags' attribute (a mapping containing any additional information useful
   for the framework code or your code) of the RPC-method.
@@ -444,7 +444,7 @@ have attributes that will be used by MTRPC:
 **Attention:** Any strings that may be sent into the client side and that
 may contain non-ascii characters *must* be unicode strings -- in particular
 it applies to the RPC-module/method docstrings!
-   
+
 Access key/keyhole mechanism
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -487,7 +487,7 @@ request) -- are:
 
 * "parentmod_name" (string) -- the `full_name' without the `local_name'
   (and of course without any trailing dot),
-  
+
 * "split_name" (list) -- the `full_name' split using ".",
 
 * "doc" (string) -- RPC-method/module docstring (the `doc' attribute),
@@ -671,17 +671,17 @@ class MTRPCServerInterface(object):
       MTRPCServerInterface instance; it doesn't do anything else, so
       after creating the instance your script is supposed to call
       load_config(), configure_logging(), do_os_settings(), start()...
-      
+
     * configure() -- get the instance, read config file (see: above config
       file structure/content description), set up logging, OS-related stuff
       (signal handlers, optional daemonization and some other things...)
       and loads RPC-module/method definitions building the RPC-tree;
       the only thing left to do by your script to run the server is to
       call the start() method.
-      
+
     * configure_and_start() -- do the same what configure() does *plus* start
       the server, and then:
-      
+
       * either return immediately (if `loop_mode' argument is false),
       * or stay and wait for KeyboardInterrupt or OS signals (if `loop_mode'
         argument is true).
@@ -697,7 +697,7 @@ class MTRPCServerInterface(object):
     * load_rpc_tree() -- load RPC-module/methods;
     * start() -- create and start service threads (manager and responder),
     * stop() -- stop these service threads.
-    
+
     By default, most of these methods base on the instance attributes
     (see below: "Public instance attributes"), but ignore them if gets
     adequate objects as arguments.
@@ -710,7 +710,7 @@ class MTRPCServerInterface(object):
     * _exit_handler(),
     * _force_exit_handler(),
     * _restart_handler() and its alias _reload_handler()
-    
+
     They define so called "actions" and their names are constructed
     in such a way: '_' + <action name> + '_handler' -- so they define:
     'exit', 'force_exit', 'restart' ('reload') actions. That action names
@@ -723,12 +723,12 @@ class MTRPCServerInterface(object):
 
     Public static/class methods
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-     
+
     * restart_on() -- set the instance [sic] attribute `_restart' to True;
       in loop-mode (see: configure_and_start()) it causes break of waiting
       for KeyboardInterrupt/OS signals and is especially useful as
       manager's final callback (=> auto-restarting after a fatal failure).
-    
+
     * validate_and_complete_config(),
     * make_config_stub(),
     * write_config_skeleton()
@@ -744,7 +744,7 @@ class MTRPCServerInterface(object):
       initially set to None) -- the service thread responsible for starting
       and stopping other threads as well as for receiving RPC requests;
       see also: mtrpc.server.thread.RPCManager documentation;
-      
+
     * responder (mtrpc.server.thread.RPCResponder instance, set at server
       start, initially set to None) -- a service thread responsible for
       sending RPC-responses after getting them from task threads
@@ -976,7 +976,7 @@ class MTRPCServerInterface(object):
         of obligatory items (specified in OBLIGATORY_CONFIG_SECTIONS)
         and complete the rest with default content (defined in
         CONFIG_SECTION_FIELDS and CONFIG_SECTION_TYPES).
-        
+
         Adjust 'bindings' item -- transforming it from a list of lists into
         a list of threads.BindingProps (namedtuple) instances.
 
@@ -1366,7 +1366,7 @@ class MTRPCServerInterface(object):
         Arguments:
 
         * reason (str) -- an arbitrary message (to be recorded in the log);
-        
+
         * loglevel (str) -- one of: 'debug', 'info', 'warning', 'error',
           'critical';
 
@@ -1381,7 +1381,7 @@ class MTRPCServerInterface(object):
         Return True if the manager thread has been stopped successfully
         (then set the `manager' attribute to None); False if it's still
         alive.
-        
+
         """
 
         with self._server_iface_rlock:

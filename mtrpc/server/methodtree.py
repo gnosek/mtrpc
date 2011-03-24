@@ -526,7 +526,7 @@ class RPCTree(Mapping):
         self.method_names2pymods = {}  # maps method full names to the
                                        # Python modules that the method
                                        # callables were taken from
-                                       
+
     @classmethod
     def build_new(cls,
                   root_pymod=None,
