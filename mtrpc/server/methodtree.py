@@ -586,6 +586,7 @@ class RPCTree(Mapping):
         # of some higher module, in "mod1.mod2.mod3.method"-way)
         (ant_names
         ) = pymods2anticipated_names[(cur_pymod, cur_full_name)].union(names)
+        scoped_ant_names = set(name.split('.')[0] for name in ant_names)
 
         # '*' symbol means: all *public functions* (not all callable objects)
         if '*' in ant_names:
@@ -675,6 +676,9 @@ class RPCTree(Mapping):
         ancestor_pymods.add(cur_pymod)
 
         for mod_name, pymod in pymod_names2objs.iteritems():
+            if mod_name not in scoped_ant_names:
+                continue
+
             if pymod in ancestor_pymods:
                 warnings.warn('Module {0} contains cyclic module reference: '
                               '{1} (we must break that cycle)'
@@ -727,6 +731,9 @@ class RPCTree(Mapping):
                        callable_obj, python_module):
 
         "Add RPC-method"
+
+        if not callable(callable_obj):
+            return
 
         if not module_full_name:
             raise TypeError("Cannot add methods to root module")

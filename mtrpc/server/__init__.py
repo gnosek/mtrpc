@@ -568,7 +568,11 @@ from . import methodtree
 from . import _daemon_recipe
 from .config import loader
 from ..common import utils
-from ..common.const import DEFAULT_JSON_ENCODING, DEFAULT_LOG_HANDLER_SETTINGS
+from ..common.const import (
+    DEFAULT_JSON_ENCODING,
+    DEFAULT_LOG_HANDLER_SETTINGS,
+    RPC_METHOD_LIST,
+    )
 
 
 
@@ -1185,6 +1189,8 @@ class MTRPCServerInterface(object):
                 postinit_kwargs = rpc_tree_init_conf.get('postinit_kwargs', {})
 
             root_mod = types.ModuleType('_MTRPC_ROOT_MODULE_')
+            root_method_list = []
+            setattr(root_mod, RPC_METHOD_LIST, root_method_list)
 
             # load modules using absolute filesystem paths
             for path_req in paths:
@@ -1202,6 +1208,7 @@ class MTRPCServerInterface(object):
                     module_name = 'mtrpc_pathloaded_{0}'.format(dst_name)
                     module = imp.load_source(module_name, file_path)
                     setattr(root_mod, dst_name, module)
+                    root_method_list.append(dst_name)
                 else:
                     self.log.warning('Cannot load module from path "{0}" as '
                                      '"{1}" -- because "{1}" name is already '
@@ -1228,6 +1235,7 @@ class MTRPCServerInterface(object):
                                         fromlist=['__dict__'],
                                         level=0)
                     setattr(root_mod, dst_name, module)
+                    root_method_list.append(dst_name)
                 else:
                     self.log.warning('Cannot import module "{0}" as "{1}" -- '
                                      'because "{1}" name is already used by '
