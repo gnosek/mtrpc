@@ -21,7 +21,7 @@ A simple example:
         routing_key_info = rpc.my_module.tell_the_rk()
         rpc_tree_content = rpc.system.list_string('', deep=True)
         add_result = rpc.my_module.add(1, 2)   # -> 3
-        
+
         try:
             div_result = rpc.my_module.my_submodule.div(10, 0)   # -> error
         except ZeroDivisionError as exc:
@@ -269,13 +269,16 @@ class MTRPCProxy(object):
                 routing_key = self._prepare_routing_key(full_name)
                 self._amqp_channel.basic_publish(msg,
                                                  exchange=self._req_exchange,
-                                                 routing_key=routing_key)
+                                                 routing_key=routing_key,
+                                                 mandatory=True,
+                                                 immediate=True)
                 self._amqp_channel.wait()
 
             finally:
                 response = self._response
                 self._response = None
-                self._amqp_channel.basic_cancel(resp_queue)
+                if self._amqp_channel.connection:
+                    self._amqp_channel.basic_cancel(resp_queue)
 
             if response.id != resp_queue:
                 raise RPCClientError("It should not happen! RPC-response id "
