@@ -83,7 +83,7 @@ class _RPCModuleMethodProxy(object):
             raise AttributeError
         else:
             if not bool(self._rpc_proxy):
-                raise RPCClientError('MTRPCProxy instance is already closed')
+                raise errors.RPCClientError('MTRPCProxy instance is already closed')
             full_name = '{0}.{1}'.format(self._full_name, local_name)
             return _RPCModuleMethodProxy(self._rpc_proxy, full_name)
 
@@ -259,7 +259,7 @@ class MTRPCProxy(object):
         self._log.info('* remote call: %s(%s)', full_name, ', '.join(all_args))
 
         if self._closed:
-            raise RPCClientError('MTRPCProxy instance is already closed')
+            raise errors.RPCClientError('MTRPCProxy instance is already closed')
 
         with self._call_lock:
             resp_queue = self._bind_and_consume()
@@ -281,7 +281,7 @@ class MTRPCProxy(object):
                     self._amqp_channel.basic_cancel(resp_queue)
 
             if response.id != resp_queue:
-                raise RPCClientError("It should not happen! RPC-response id "
+                raise errors.RPCClientError("It should not happen! RPC-response id "
                                      "{0!r} differs from RPC-request id {1!r}"
                                      .format(response.id, resp_queue))
             elif response.error:
@@ -321,7 +321,7 @@ class MTRPCProxy(object):
             response_dict = json.loads(msg.body, encoding=self._json_encoding)
             self._response = Response(**utils.kwargs_to_str(response_dict))
         except Exception:
-            raise RPCClientError('Could not deserialize message: {0!r}\n{1}'
+            raise errors.RPCClientError('Could not deserialize message: {0!r}\n{1}'
                                  .format(msg.body, traceback.format_exc()))
 
 
@@ -346,7 +346,7 @@ class MTRPCProxy(object):
                     reply_to=resp_queue,
             )
         except Exception:
-            raise RPCClientError('Could not serialize request dict: {0!r}\n{1}'
+            raise errors.RPCClientError('Could not serialize request dict: {0!r}\n{1}'
                                  .format(request_dict, traceback.format_exc()))
 
 
@@ -381,7 +381,7 @@ class MTRPCProxy(object):
                     exctype = getattr(__builtin__, exctype_name)
 
         except Exception:
-            raise RPCClientError(
+            raise errors.RPCClientError(
                     'The response contains unknown/unproper '
                     'error-item: {0!r} -- with message: {1!r}'
                     .format(exctype_name, exc_message))
