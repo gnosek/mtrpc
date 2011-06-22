@@ -35,3 +35,7 @@ def run_cli(module, opt=None):
                 slownik[k] = v
             f = getattr(module, args[0])
             print f(**slownik)
+
+if __name__ == '__main__':
+    run_cli(sys.modules[__name__])
+
