@@ -29,12 +29,16 @@ def run_cli(module, opt=None):
             print f()
 
         else:
-            slownik = dict()
+            kwargs = dict()
+            vargs = []
             for i in args[1:]:
-                k, v = i.split('=', 1)
-                slownik[k] = v
+                try:
+                    k, v = i.split('=', 1)
+                    kwargs[k] = v
+                except ValueError:
+                    vargs.append(i)
             f = getattr(module, args[0])
-            print f(**slownik)
+            print f(*vargs, **kwargs)
 
 if __name__ == '__main__':
     run_cli(sys.modules[__name__])
