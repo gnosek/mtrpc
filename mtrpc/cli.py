@@ -2,6 +2,9 @@ import inspect
 import sys
 from optparse import OptionParser
 
+def print_func_sig(name, func):
+	argspec = inspect.getargspec(func)
+	print "\t%s(%s)" % (name, ', '.join(argspec[0]))
 
 def run_cli(module, opt=None):
 	if opt is None:
@@ -13,17 +16,12 @@ def run_cli(module, opt=None):
 	j = len(args)
 
 	if options.info and j == 1:
-		A = inspect.getargspec(getattr(module, args[0]))
-		print 'lista argumentow funkcji:'
-		for i in A[0]:
-			print i					#wyswietlanie argumentow funkcji
+		print_func_sig(args[0], getattr(module, args[0]))
 
 	else:
 		if j == 0:
-			print "Modul %s posiada funkcje: " % module.__name__
 			for name, func in inspect.getmembers(module, inspect.isfunction):
-				A = inspect.getargspec(func)
-				print "\t%s(%s)" % (name, ', '.join(A[0]))
+				print_func_sig(name, func)
 
 		elif j == 1:
 			f = getattr(module, args[0])
