@@ -6,7 +6,10 @@ def print_func_sig(name, func):
     argspec = inspect.getargspec(func)
     print "\t%s%s" % (name, inspect.formatargspec(*argspec))
 
-def run_cli(module, opt=None):
+def run_cli(module=None, opt=None):
+    if module is None:
+        module = sys.modules['__main__']
+
     if opt is None:
         opt=sys.argv
 
