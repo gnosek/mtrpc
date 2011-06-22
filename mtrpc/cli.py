@@ -15,8 +15,9 @@ def run_cli(module, opt=None):
     (options, args) = parser.parse_args(opt[1:])
     j = len(args)
 
-    if options.info and j == 1:
-        print_func_sig(args[0], getattr(module, args[0]))
+    if options.info:
+        for arg in args:
+            print_func_sig(arg, getattr(module, arg))
 
     else:
         if j == 0:
