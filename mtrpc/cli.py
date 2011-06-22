@@ -4,7 +4,7 @@ from optparse import OptionParser
 
 def print_func_sig(name, func):
     argspec = inspect.getargspec(func)
-    print "\t%s(%s)" % (name, ', '.join(argspec[0]))
+    print "\t%s%s" % (name, inspect.formatargspec(*argspec))
 
 def run_cli(module, opt=None):
     if opt is None:
