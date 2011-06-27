@@ -21,7 +21,7 @@
 
 import sys
 import traceback
-
+from decorator import decorator
 
 class RPCError(Exception):
     "Base MTRPC exception"
@@ -119,3 +119,18 @@ def raise_exc(exception, *args, **kwargs):
         raise TypeError("Cannot instantiate {0!r} -- it's not "
                         "an exception type object".format(exception))
     raise MethodExcWrapper(wrapped_exc)
+
+
+def wrap_exceptions(exc_base_class):
+
+    """Wrap exceptions derived from exc_base_class as passable over MTRPC"""
+
+    def make_wrapper(func):
+        def wrapper(func, *args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except exc_base_class as exc:
+                raise_exc(exc)
+        return decorator(wrapper, func)
+    return make_wrapper
+
