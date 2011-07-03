@@ -13,4 +13,9 @@ setup(
     description='Easy JSONRPC over AMQP',
     license='MIT',
     keywords='mtrpc rpc json jsonrpc amqp',
+    entry_points={
+        'console_scripts': [
+            'mtrpc-request = mtrpc.mtrpc_request:main'
+        ],
+    }
 )
