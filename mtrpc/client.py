@@ -110,7 +110,6 @@ class MTRPCProxy(object):
 
     def __init__(self, req_exchange, req_rk_pattern,
                  resp_exchange=DEFAULT_RESP_EXCHANGE, custom_exceptions=None,
-                 json_encoding=DEFAULT_JSON_ENCODING,
                  log=None, loglevel=None, **amqp_params):
 
         """RPC-proxy initialization.
@@ -140,10 +139,6 @@ class MTRPCProxy(object):
           your custom (additional) RPC-transportable exceptions; maps
           class names to class objects; (default: None)
 
-        * json_encoding (str) -- json encoding for (de)serializing
-          RPC-requests and responses (default --
-          see: mtrpc.common.const.DEFAULT_JSON_ENCODING);
-
         * log (logging.Logger instance or str or None) -- logger object
           or name (default: None => standard "basic" logging
           configuration, using the root logger);
@@ -163,7 +158,6 @@ class MTRPCProxy(object):
             self._custom_exceptions = {}
         else:
             self._custom_exceptions = custom_exceptions
-        self._json_encoding = json_encoding
         self._resp_exchange = resp_exchange
 
         self._call_lock = threading.RLock()
@@ -318,7 +312,7 @@ class MTRPCProxy(object):
 
     def _store_response(self, msg):
         try:
-            response_dict = json.loads(msg.body, encoding=self._json_encoding)
+            response_dict = json.loads(msg.body)
             self._response = Response(**utils.kwargs_to_str(response_dict))
         except Exception:
             raise errors.RPCClientError('Could not deserialize message: {0!r}\n{1}'
@@ -338,7 +332,6 @@ class MTRPCProxy(object):
         try:
             message_data = json.dumps(
                     request_dict,
-                    encoding=self._json_encoding,
             )
             return amqp.Message(
                     message_data,

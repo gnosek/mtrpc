@@ -44,9 +44,6 @@ RPC-modules/methods:
   * DEFAULT_RESP_EXCHANGE -- default name of AMQP exchange to be used to
     send RPC-responses by server to client (via AMQP broker);
 
-  * DEFAULT_JSON_ENCODING -- default JSON encoding (for (de)serializing
-    RPC-requests and responses as well as parsing server configuration);
-
   * DEFAULT_LOG_HANDLER_SETTINGS -- default server logger handler
     settings (see: the fragment of mtrpc.server documentation about
     configuration file structure and content).
@@ -79,7 +76,6 @@ ACC_KWARGS = frozenset((
 
 # Some defaults
 DEFAULT_RESP_EXCHANGE = 'amq.direct'
-DEFAULT_JSON_ENCODING = 'utf-8'
 DEFAULT_LOG_HANDLER_SETTINGS = dict(
         cls='StreamHandler',
         kwargs={},

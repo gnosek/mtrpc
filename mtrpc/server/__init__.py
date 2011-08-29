@@ -569,7 +569,6 @@ from . import _daemon_recipe
 from .config import loader
 from ..common import utils
 from ..common.const import (
-    DEFAULT_JSON_ENCODING,
     DEFAULT_LOG_HANDLER_SETTINGS,
     RPC_METHOD_LIST,
     )
@@ -839,7 +838,6 @@ class MTRPCServerInterface(object):
 
     @classmethod
     def configure(cls, config_path=None, config_dict=None,
-                  config_encoding=DEFAULT_JSON_ENCODING,
                   force_daemon=False,
                   default_postinit_callable=utils.basic_postinit):
 
@@ -849,8 +847,6 @@ class MTRPCServerInterface(object):
                              config_dict -- parsed config
 
         Optional arguments:
-
-        * config_encoding (str) -- default: common.const.DEFAULT_JSON_ENCODING;
 
         * force_daemon (bool) -- if True => always daemonize the OS process
           (ignore the 'os_settings'->'daemon' field), default: False;
@@ -866,7 +862,7 @@ class MTRPCServerInterface(object):
         try:
             self = cls.get_instance()
             if config_path is not None:
-                self.load_config(config_path, config_encoding)
+                self.load_config(config_path)
             else:
                 self.config = self.validate_and_complete_config(config_dict)
             self.configure_logging()
@@ -883,7 +879,6 @@ class MTRPCServerInterface(object):
 
     @classmethod
     def configure_and_start(cls, config_path=None, config_dict=None,
-                            config_encoding=DEFAULT_JSON_ENCODING,
                             force_daemon=False,
                             default_postinit_callable=utils.basic_postinit,
                             loop_mode=False,
@@ -895,7 +890,6 @@ class MTRPCServerInterface(object):
 
         Optional arguments:
 
-        * config_encoding
         * loop_mode
         * force_daemon
         * default_postinit_callable
@@ -912,7 +906,7 @@ class MTRPCServerInterface(object):
         """
 
         while True:
-            self = cls.configure(config_path, config_dict, config_encoding,
+            self = cls.configure(config_path, config_dict,
                                  force_daemon, default_postinit_callable)
             try:
                 self.start(final_callback=final_callback)
@@ -953,7 +947,7 @@ class MTRPCServerInterface(object):
         cls._instance._restart = True
 
 
-    def load_config(self, config_path, config_encoding=DEFAULT_JSON_ENCODING):
+    def load_config(self, config_path):
         "Load the config from a JSON file; check, adjust, return as a dict"
         try:
             with open(config_path) as config_file:
@@ -1413,15 +1407,13 @@ class MTRPCServerInterface(object):
 
 
     @classmethod
-    def write_config_skeleton(dest_path, config_stub=None,
-                              config_encoding=DEFAULT_JSON_ENCODING):
+    def write_config_skeleton(dest_path, config_stub=None):
         "Write config skeleton into file (you'll adjust that file by hand)"
         if config_stub is None:
             config_stub = cls.make_config_stub()
         config = cls.validate_and_complete_config(config_stub)
         with open(dest_path, 'w') as dest_file:
-            json.dump(config, dest_file, encoding=config_encoding,
-                      sort_keys=True, indent=4)
+            json.dump(config, dest_file, sort_keys=True, indent=4)
 
 
 

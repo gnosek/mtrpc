@@ -492,9 +492,6 @@ class RPCManager(AMQPClientServiceThread):
     #wakeup_routing_key = 'wakeup'
     sel_timeout = 60
 
-    # for (de)serialization messages from/to JSON
-    json_encoding = DEFAULT_JSON_ENCODING
-
     instance_counter = itertools.count(1)
 
 
@@ -833,7 +830,7 @@ class RPCManager(AMQPClientServiceThread):
                     access_key_patt=binding_props.access_key_patt,
                     access_keyhole_patt=binding_props.access_keyhole_patt,
                     reply_to=reply_to)
-                    
+
         task_recorded = False
         try:
             with self.mutex:  # see: RPCResponder's main_loop() + final_action()
@@ -846,14 +843,13 @@ class RPCManager(AMQPClientServiceThread):
                 task_thread = RPCTaskThread(task,
                                             self.rpc_tree,
                                             self.result_fifo,
-                                            self.json_encoding,
                                             self.log)
                 task_thread.start()
                 self.log.debug('%s created and started', task_thread)
         finally:
             if task_recorded:
                 self.amqp_channel.basic_ack(msg.delivery_tag)
-                
+
         return task
 
 
@@ -897,10 +893,10 @@ class RPCManager(AMQPClientServiceThread):
 
                 # wait until the responder terminates
                 self.responder.join_stopping(None)
-                
+
             finally:
                 os.close(self.resp_stopping_fd_r)
-                
+
         finally:
             if self.final_callback is not None:
                 self.log.info('Final callback %r is set, calling it...',
@@ -957,7 +953,7 @@ class RPCResponder(AMQPClientServiceThread):
     After creation of an instance (see init() method docstring) it should
     be passed to the manager constructor (the manager's init() starts the
     responder itself).
-    
+
     """
 
     exchange = DEFAULT_RESP_EXCHANGE
@@ -1093,14 +1089,13 @@ class RPCTaskThread(threading.Thread):
     instance_counter = itertools.count(1)
 
 
-    def __init__(self, task, rpc_tree, result_fifo, json_encoding, log):
+    def __init__(self, task, rpc_tree, result_fifo, log):
         task_thread_id = next(self.instance_counter)
         threading.Thread.__init__(self, name='TaskThread-{0}/task-{1}'
                                              .format(task_thread_id, task.id))
         self.task = task
         self.rpc_tree = rpc_tree
         self.result_fifo = result_fifo
-        self.json_encoding = json_encoding
         self.log = log
 
 
@@ -1119,8 +1114,7 @@ class RPCTaskThread(threading.Thread):
             try:
                 self.log.debug('Deserializing request message: %r...',
                                task.request_message)
-                request = self._deserialize_request(task.request_message,
-                                                    self.json_encoding)
+                request = self._deserialize_request(task.request_message)
                 (rpc_method
                 ) = self.rpc_tree.try_to_obtain(request.method,
                                                 task.access_dict,
@@ -1216,8 +1210,7 @@ class RPCTaskThread(threading.Thread):
                                      error=error,
                                      id=request_id)
 
-            response_message = self._serialize_response(response_dict,
-                                                        self.json_encoding)
+            response_message = self._serialize_response(response_dict)
             result = Result(task.id, task.reply_to, response_message)
             self.result_fifo.put(result)
             self.log.debug('Result %r put into result fifo', result)
@@ -1230,9 +1223,9 @@ class RPCTaskThread(threading.Thread):
             self.log.debug('Task completed, task thread terminates...')
 
 
-    def _deserialize_request(self, request_message, encoding):
+    def _deserialize_request(self, request_message):
         try:
-            message_data = json.loads(request_message, encoding=encoding)
+            message_data = json.loads(request_message)
         except ValueError:
             raise RPCDeserializationError(request_message)
 
@@ -1258,9 +1251,9 @@ class RPCTaskThread(threading.Thread):
         return request
 
 
-    def _serialize_response(self, response_dict, encoding):
+    def _serialize_response(self, response_dict):
         try:
-            return json.dumps(response_dict, encoding=encoding)
+            return json.dumps(response_dict)
         except TypeError:
             error = dict(name='RPCServerSerializationError',
                          message='Result not serializable')
