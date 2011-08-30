@@ -1205,7 +1205,21 @@ class RPCTaskThread(threading.Thread):
                     self.log.warning("Could not get id from the request. "
                                      "Using task's `reply to' instead...")
                     request_id = task.reply_to  # should be equal to reqest.id
-                error = dict(name=exc_type.__name__, message=str(exc), data=exc.__dict__)
+
+
+                try:
+                    exc_dict = exc.__getstate__()
+                except AttributeError:
+                    exc_dict = exc.__dict__
+
+                try:
+                    encoding.dumps(exc_dict)
+                except TypeError:
+                    self.log.warning('Unserializable exception __dict__ ({0}): {1!r}'.format(
+                        exc_type.__name__, exc_dict))
+                    exc_dict = None
+
+                error = dict(name=exc_type.__name__, message=str(exc), data=exc_dict)
                 response_dict = dict(result=None,
                                      error=error,
                                      id=request_id)
