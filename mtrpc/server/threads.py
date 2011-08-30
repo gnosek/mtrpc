@@ -1205,7 +1205,7 @@ class RPCTaskThread(threading.Thread):
                     self.log.warning("Could not get id from the request. "
                                      "Using task's `reply to' instead...")
                     request_id = task.reply_to  # should be equal to reqest.id
-                error = dict(name=exc_type.__name__, message=str(exc))
+                error = dict(name=exc_type.__name__, message=str(exc), data=exc.__dict__)
                 response_dict = dict(result=None,
                                      error=error,
                                      id=request_id)

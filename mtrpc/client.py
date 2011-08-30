@@ -358,9 +358,11 @@ class MTRPCProxy(object):
             try:
                 exctype_name = received_error.get('name', '')
                 exc_message = received_error.get('message', '')
+                exc_data = received_error.get('data', None)
             except (TypeError, AttributeError):
                 exctype_name = '<UNKNOWN!>'
                 exc_message = '<UNKNOWN!>'
+                exc_data = None
                 raise Exception
 
             try:
@@ -374,7 +376,10 @@ class MTRPCProxy(object):
         except Exception:
             raise errors.RPCClientError(
                     'The response contains unknown/unproper '
-                    'error-item: {0!r} -- with message: {1!r}'
-                    .format(exctype_name, exc_message))
+                    'error-item: {0!r} -- with message: {1!r} and data {2!r}'
+                    .format(exctype_name, exc_message, exc_data))
         else:
-            raise exctype(exc_message)
+            exc = exctype(exc_message)
+            if exc_data:
+                exc.__dict__.update(exc_data)
+            raise exc
