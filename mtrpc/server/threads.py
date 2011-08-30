@@ -123,7 +123,6 @@ import abc
 import functools
 import hashlib
 import itertools
-import json
 import logging
 import os
 import select
@@ -138,6 +137,7 @@ from amqplib.client_0_8 import transport as amqp_transport
 
 from . import methodtree
 from ..common import utils
+from ..common import encoding
 from ..common.const import *
 from ..common.errors import *
 
@@ -1225,7 +1225,7 @@ class RPCTaskThread(threading.Thread):
 
     def _deserialize_request(self, request_message):
         try:
-            message_data = json.loads(request_message)
+            message_data = encoding.loads(request_message)
         except ValueError:
             raise RPCDeserializationError(request_message)
 
@@ -1253,10 +1253,10 @@ class RPCTaskThread(threading.Thread):
 
     def _serialize_response(self, response_dict):
         try:
-            return json.dumps(response_dict)
+            return encoding.dumps(response_dict)
         except TypeError:
             error = dict(name='RPCServerSerializationError',
                          message='Result not serializable')
             err_response_dict = dict(result=None, error=error,
                                      id=response_dict['id'])
-            return json.dumps(err_response_dict)
+            return encoding.dumps(err_response_dict)

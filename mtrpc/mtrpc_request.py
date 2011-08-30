@@ -4,14 +4,14 @@
 import logging
 import traceback
 import sys
-import json
 from optparse import OptionParser
 
 from mtrpc.client import MTRPCProxy
+from mtrpc.common import encoding
 
 def decode_arg(arg):
     try:
-        return json.loads(arg)
+        return encoding.loads(arg)
     except ValueError:
         return arg
 
@@ -51,7 +51,7 @@ def main():
             retcode = 1
         else:
             if o.json:
-                print json.dumps(ret),
+                print encoding.dumps(ret),
             else:
                 print ret,
 

@@ -48,7 +48,6 @@ from future_builtins import filter, map, zip
 
 import __builtin__
 import itertools
-import json
 import logging
 import threading
 import traceback
@@ -59,6 +58,7 @@ from amqplib import client_0_8 as amqp
 
 from .common import utils
 from .common import errors
+from .common import encoding
 from .common.const import *
 
 
@@ -312,7 +312,7 @@ class MTRPCProxy(object):
 
     def _store_response(self, msg):
         try:
-            response_dict = json.loads(msg.body)
+            response_dict = encoding.loads(msg.body)
             self._response = Response(**utils.kwargs_to_str(response_dict))
         except Exception:
             raise errors.RPCClientError('Could not deserialize message: {0!r}\n{1}'
@@ -330,9 +330,7 @@ class MTRPCProxy(object):
             request_dict['kwparams'] = call_kwargs
 
         try:
-            message_data = json.dumps(
-                    request_dict,
-            )
+            message_data = encoding.dumps(request_dict)
             return amqp.Message(
                     message_data,
                     delivery_mode=2,
