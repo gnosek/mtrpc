@@ -1,4 +1,4 @@
-# mtrpc/server/__init__.py
+#!/usr/bin/env python
 #
 # Author: Jan Kaliszewski (zuo)
 # Copyright (c) 2010, MegiTeam
@@ -1427,3 +1427,34 @@ class MTRPCServerInterface(object):
 make_config_stub = MTRPCServerInterface.make_config_stub
 
 write_config_skeleton = MTRPCServerInterface.write_config_skeleton
+
+def run_server(config_path, daemon=False):
+    restart_lock = threading.Lock()
+    final_callback = restart_lock.release
+    # (^ to restart the server when the service threads are stopped)
+    try:
+        # no inner server loop needed, we have the outer one here
+        while True:
+            if restart_lock.acquire(False):   # (<- non-blocking)
+                server = MTRPCServerInterface.configure_and_start(
+                        config_path=config_path,
+                        force_daemon=daemon,
+                        loop_mode=False,  # <- return immediately
+                        final_callback=final_callback,
+                )
+            signal.pause()
+    except KeyboardInterrupt:
+        server.stop()
+
+def main():
+    from optparse import OptionParser
+    parser = OptionParser(usage='%prog [options]')
+    parser.add_option('-d', '--daemon', dest='daemon', action='store_true', default=False, help='Daemonize')
+    parser.add_option('-c', '--config', dest='config', help='Path to config file', metavar='FILE')
+
+    (o, a) = parser.parse_args(sys.argv[1:])
+
+    run_server(o.config, o.daemon)
+
+if __name__ == '__main__':
+    main()
