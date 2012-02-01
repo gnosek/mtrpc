@@ -282,9 +282,10 @@ def process_logical_line(props, ll):
     else:
         return props
 
-def load_props(f):
+def load_props(f, props=None):
     logical_line = ''
-    props = {}
+    if props is None:
+        props = {}
     for line in f:
         if len(line) == 0 or line.startswith('#'):
             continue

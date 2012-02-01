@@ -1428,7 +1428,7 @@ make_config_stub = MTRPCServerInterface.make_config_stub
 
 write_config_skeleton = MTRPCServerInterface.write_config_skeleton
 
-def run_server(config_path, daemon=False):
+def run_server(config_paths, daemon=False):
     restart_lock = threading.Lock()
     final_callback = restart_lock.release
     # (^ to restart the server when the service threads are stopped)
@@ -1436,8 +1436,11 @@ def run_server(config_path, daemon=False):
         # no inner server loop needed, we have the outer one here
         while True:
             if restart_lock.acquire(False):   # (<- non-blocking)
+                config_dict = dict()
+                for p in config_paths:
+                    config_dict = loader.load_props(open(p), config_dict)
                 server = MTRPCServerInterface.configure_and_start(
-                        config_path=config_path,
+                        config_dict=config_dict,
                         force_daemon=daemon,
                         loop_mode=False,  # <- return immediately
                         final_callback=final_callback,
@@ -1448,13 +1451,12 @@ def run_server(config_path, daemon=False):
 
 def main():
     from optparse import OptionParser
-    parser = OptionParser(usage='%prog [options]')
+    parser = OptionParser(usage='%prog [options] config_file...')
     parser.add_option('-d', '--daemon', dest='daemon', action='store_true', default=False, help='Daemonize')
-    parser.add_option('-c', '--config', dest='config', help='Path to config file', metavar='FILE')
 
-    (o, a) = parser.parse_args(sys.argv[1:])
+    (o, a) = parser.parse_args()
 
-    run_server(o.config, o.daemon)
+    run_server(a, o.daemon)
 
 if __name__ == '__main__':
     main()
