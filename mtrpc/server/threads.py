@@ -1160,7 +1160,9 @@ class RPCTaskThread(threading.Thread):
                                    'for %r RPC-method call. Exception info:',
                                    request.method, exc_info=True)
                     exc_args = list(orig_exc.args)
-                    exc_args[0] = exc_args[0].format(name=request.method)
+                    # cannot use .format due to other {items} potentially
+                    # appearing in exc_args[0]
+                    exc_args[0] = exc_args[0].replace('{name}', request.method)
                     exc = exc_type(*exc_args)
 
                 except methodtree.BadAccessPatternError:
