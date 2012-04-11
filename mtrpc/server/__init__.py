@@ -1428,7 +1428,7 @@ make_config_stub = MTRPCServerInterface.make_config_stub
 
 write_config_skeleton = MTRPCServerInterface.write_config_skeleton
 
-def run_server(config_paths, daemon=False):
+def run_server(config_paths, daemon=False, pidfile_path=None):
     restart_lock = threading.Lock()
     final_callback = restart_lock.release
     # (^ to restart the server when the service threads are stopped)
@@ -1445,6 +1445,9 @@ def run_server(config_paths, daemon=False):
                         loop_mode=False,  # <- return immediately
                         final_callback=final_callback,
                 )
+                if daemon and pidfile_path:
+                    with open(pidfile_path, 'w') as f:
+                        print >>f, os.getpid()
             signal.pause()
     except KeyboardInterrupt:
         server.stop()
@@ -1452,11 +1455,12 @@ def run_server(config_paths, daemon=False):
 def main():
     from optparse import OptionParser
     parser = OptionParser(usage='%prog [options] config_file...')
-    parser.add_option('-d', '--daemon', dest='daemon', action='store_true', default=False, help='Daemonize')
+    parser.add_option('-d', '--daemon', dest='daemon', action='store_true', default=False, help='daemonize')
+    parser.add_option('-p', '--pidfile', dest='pidfile', action='store', default=None, help='write pid to file')
 
     (o, a) = parser.parse_args()
 
-    run_server(a, o.daemon)
+    run_server(a, o.daemon, o.pidfile)
 
 if __name__ == '__main__':
     main()
