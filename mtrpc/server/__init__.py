@@ -554,6 +554,7 @@ import logging
 import logging.handlers
 import os
 import os.path
+import pkg_resources
 import Queue
 import signal
 import sys
@@ -1428,6 +1429,17 @@ make_config_stub = MTRPCServerInterface.make_config_stub
 
 write_config_skeleton = MTRPCServerInterface.write_config_skeleton
 
+def config_file(config_path):
+    if ':' not in config_path or config_path.startswith('/'):
+        return open(config_path)
+
+    package, relative_path = config_path.split(':', 1)
+
+    resource_manager = pkg_resources.ResourceManager()
+    provider = pkg_resources.get_provider(package)
+
+    return provider.get_resource_stream(resource_manager, relative_path)
+
 def run_server(config_paths, daemon=False, pidfile_path=None):
     restart_lock = threading.Lock()
     final_callback = restart_lock.release
@@ -1438,7 +1450,8 @@ def run_server(config_paths, daemon=False, pidfile_path=None):
             if restart_lock.acquire(False):   # (<- non-blocking)
                 config_dict = dict()
                 for p in config_paths:
-                    config_dict = loader.load_props(open(p), config_dict)
+                    fp = config_file(p)
+                    config_dict = loader.load_props(fp, config_dict)
                 server = MTRPCServerInterface.configure_and_start(
                         config_dict=config_dict,
                         force_daemon=daemon,
