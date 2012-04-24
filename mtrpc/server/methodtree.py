@@ -115,7 +115,9 @@ class RPCMethodHelp(RPCObjectHelp):
     "RPCMethod help-text generator"
 
     def _format_head(self):
-        return u'{{name}}{0}'.format(self.rpc_object.formatted_arg_spec)
+        argspec = self.rpc_object.formatted_arg_spec
+        argspec = argspec.replace('{', '{{').replace('}', '}}')
+        return u'{{name}}{0}'.format(argspec)
 
     def format(self, name, with_meth='[blah]',
                meth_head_indent=(4 * u' ' + u'* '), mod_head_indent='[blah]',
