@@ -137,11 +137,10 @@ from amqplib.client_0_8 import transport as amqp_transport
 
 from . import methodtree
 from ..common import utils
-from ..common import encoding
 from ..common.const import *
 from ..common.errors import *
 
-
+import json as encoding
 
 #
 # Auxiliary constants and types

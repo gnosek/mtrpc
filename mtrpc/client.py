@@ -58,10 +58,9 @@ from amqplib import client_0_8 as amqp
 
 from .common import utils
 from .common import errors
-from .common import encoding
 from .common.const import *
 
-
+import json as encoding
 
 #
 # Auxiliary types
