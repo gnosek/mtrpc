@@ -1430,15 +1430,24 @@ make_config_stub = MTRPCServerInterface.make_config_stub
 write_config_skeleton = MTRPCServerInterface.write_config_skeleton
 
 def config_file(config_path):
-    if ':' not in config_path or config_path.startswith('/'):
+    if config_path.startswith('/'):
         return open(config_path)
 
-    package, relative_path = config_path.split(':', 1)
+    if '=' in config_path:
+        key, value = config_path.split('=', 1)
+        # convert key=value to key: value
+        # key:value syntax is already taken by package loader
+        return ['{key}: {value}'.format(key=key.strip(), value=value.strip())]
 
-    resource_manager = pkg_resources.ResourceManager()
-    provider = pkg_resources.get_provider(package)
+    if ':' in config_path:
+        package, relative_path = config_path.split(':', 1)
 
-    return provider.get_resource_stream(resource_manager, relative_path)
+        resource_manager = pkg_resources.ResourceManager()
+        provider = pkg_resources.get_provider(package)
+
+        return provider.get_resource_stream(resource_manager, relative_path)
+
+    return open(config_path)
 
 def run_server(config_paths, daemon=False, pidfile_path=None):
     restart_lock = threading.Lock()
