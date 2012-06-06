@@ -1435,9 +1435,15 @@ def config_file(config_path):
 
     if '=' in config_path:
         key, value = config_path.split('=', 1)
+        key = key.strip()
+        value = value.strip()
+        try:
+            json.loads(value)
+        except ValueError:
+            value = json.dumps(value)
         # convert key=value to key: value
         # key:value syntax is already taken by package loader
-        return ['{key}: {value}'.format(key=key.strip(), value=value.strip())]
+        return ['{key}: {value}'.format(key=key, value=value)]
 
     if ':' in config_path:
         package, relative_path = config_path.split(':', 1)
