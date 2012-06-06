@@ -1458,6 +1458,7 @@ def config_file(config_path):
 def run_server(config_paths, daemon=False, pidfile_path=None):
     restart_lock = threading.Lock()
     final_callback = restart_lock.release
+    server = None
     # (^ to restart the server when the service threads are stopped)
     try:
         # no inner server loop needed, we have the outer one here
@@ -1478,7 +1479,8 @@ def run_server(config_paths, daemon=False, pidfile_path=None):
                         print >>f, os.getpid()
             signal.pause()
     except KeyboardInterrupt:
-        server.stop()
+        if server:
+            server.stop()
 
 def main():
     from optparse import OptionParser
