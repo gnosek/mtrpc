@@ -247,6 +247,11 @@ def zip_objects(a, b):
     >>> d = zip_objects(d1, d2)
     >>> d['c']
     ['c2', 'cc']
+    >>> d1 = {'a': 'aa', 'b': 'xx', 'c': [None, 'cc']}
+    >>> d2 = {'a': None, 'b': 'bb', 'c': ['c2', None]}
+    >>> d = zip_objects(d1, d2)
+    >>> d['b']
+    'bb'
     """
     if a is None:
         return b
@@ -261,7 +266,7 @@ def zip_objects(a, b):
     elif ta == dict:
         return zip_dicts(a, b)
     else:
-        raise TypeError('Cannot zip {0!r} and {1!r}'.format(a, b))
+        return b
 
 
 def process_logical_line(props, ll):
