@@ -13,17 +13,20 @@ try:
 except AttributeError:
     json_v26 = False
 
+ISO8601_FORMAT_V26 = '%Y%m%dT%H:%M:%S.%f'
+ISO8601_FORMAT_V25 = '%Y%m%dT%H:%M:%S'
+
 if sys.version_info >= (2, 6):
-    ISO8601_FORMAT = '%Y%m%dT%H:%M:%S.%f'
+    ISO8601_FORMATS = (ISO8601_FORMAT_V26, ISO8601_FORMAT_V25)
 else:
-    ISO8601_FORMAT = '%Y%m%dT%H:%M:%S'
+    ISO8601_FORMATS = (ISO8601_FORMAT_V25,)
 
 class MtrpcJsonEncoder(json.JSONEncoder):
     """Serialize datetime instances as iso8601 timestamps"""
 
     def default(self, o):
         if isinstance(o, datetime.datetime):
-            return o.strftime(ISO8601_FORMAT)
+            return o.strftime(ISO8601_FORMATS[0])
 
         return super(MtrpcJsonEncoder, self).default(o)
 
@@ -104,10 +107,12 @@ if json_v26:
     @json.scanner.pattern(r'"')
     def mtrpc_string(match, context):
         s, end = json.decoder.JSONString(match, context)
-        try:
-            s = datetime.datetime.strptime(s, ISO8601_FORMAT)
-        except ValueError:
-            pass
+        for fmt in ISO8601_FORMATS:
+            try:
+                s = datetime.datetime.strptime(s, fmt)
+                return s, end
+            except ValueError:
+                continue
 
         return s, end
 
@@ -126,10 +131,12 @@ else:
 
     def mtrpc_scanstring(s, end, *args, **kwargs):
         s, end = json.decoder.scanstring(s, end, *args, **kwargs)
-        try:
-            s = datetime.datetime.strptime(s, ISO8601_FORMAT)
-        except ValueError:
-            pass
+        for fmt in ISO8601_FORMATS:
+            try:
+                s = datetime.datetime.strptime(s, fmt)
+                return s, end
+            except ValueError:
+                continue
 
         return s, end
 
