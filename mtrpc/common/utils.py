@@ -9,6 +9,7 @@
 
 import logging
 import socket
+import sys
 
 from .const import *
 
@@ -95,10 +96,16 @@ def configure_logging(log, prev_log, log_handlers, log_config):
     default_hprops = DEFAULT_LOG_HANDLER_SETTINGS
     for handler_props in log_config['handlers']:
         class_name = handler_props['cls']
-        try:
-            HandlerClass = getattr(logging, class_name)
-        except AttributeError:
-            HandlerClass = getattr(logging.handlers, class_name)
+        if '.' in class_name:
+            package, class_name = class_name.rsplit('.', 1)
+            __import__(package)
+            handler_package = sys.modules[package]
+            HandlerClass = getattr(handler_package, class_name)
+        else:
+            try:
+                HandlerClass = getattr(logging, class_name)
+            except AttributeError:
+                HandlerClass = getattr(logging.handlers, class_name)
 
         kwargs = handler_props.get('kwargs', default_hprops['kwargs'])
         level = handler_props.get('level', default_hprops['level']).upper()
