@@ -23,16 +23,16 @@ def basic_postinit(mod, full_name, logging_settings, mod_globals):
     """Initialize the module logger and add custom globals
 
     Arguments:
-    
+
     * mod -- the Python module object;
-    
+
     * full_name -- an absolute dot.separated.name;
-    
+
     * logging_settings -- a dict with all or some of the keys:
       'mod_logger_pattern', 'level', 'handlers', 'propagate',
       'custom_mod_loggers' (see: the fragment of mtrpc.server
       documentation about configuration file structure and content);
-      
+
     * mod_globals -- a dict of variables to be set as module globals.
 
     """
@@ -69,13 +69,13 @@ def configure_logging(log, prev_log, log_handlers, log_config):
     """Configure logging for a particular logger, using given settings.
 
     Arguments:
-    
+
     * log (logging.Logger instance) -- a new logger (to configure);
-    
+
     * prev_log (logging.Logger instance) -- the previous logger;
-    
+
     * log_handlers -- auxiliary list of logger handlers being in use;
-    
+
     * log_config -- a dict with all or some of the keys: 'level' (str),
       'handlers' (dict), 'propagate' (bool); see: the fragment of
       mtrpc.server documentation about configuration file structure
