@@ -174,6 +174,8 @@ def loads(s, *args, **kwargs):
     datetime.datetime(2011, 1, 2, 15, 30, 15, 30101)
     >>> unicode(d['c'])
     u'2011'
+    >>> loads('{}')
+    {}
     '''
     kwargs['cls'] = MtrpcJsonDecoder
     return json.loads(s, *args, **kwargs)
