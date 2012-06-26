@@ -267,6 +267,14 @@ class MTRPCProxy(object):
                                                  mandatory=True,
                                                  immediate=True)
                 self._amqp_channel.wait()
+                if not self._response:
+                    reply_code, reply_text, exchange, rk, message = self._amqp_channel.returned_messages.get()
+                    if message.reply_to != resp_queue:
+                        raise errors.RPCClientError("It should not happen! RPC-error id "
+                                             "{0!r} differs from RPC-request id {1!r}"
+                                             .format(message.reply_to, resp_queue))
+                    raise amqp.exceptions.AMQPChannelException(
+                        reply_code, reply_text, (exchange, rk))
 
             finally:
                 response = self._response
