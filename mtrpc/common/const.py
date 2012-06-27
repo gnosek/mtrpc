@@ -75,6 +75,7 @@ ACC_KWARGS = frozenset((
 
 
 # Some defaults
+DEFAULT_REQ_RK_PATTERN = '{full_name}'
 DEFAULT_RESP_EXCHANGE = 'amq.direct'
 DEFAULT_LOG_HANDLER_SETTINGS = dict(
         cls='StreamHandler',

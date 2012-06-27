@@ -108,7 +108,7 @@ class MTRPCProxy(object):
 
     """
 
-    def __init__(self, req_exchange, req_rk_pattern,
+    def __init__(self, req_exchange, req_rk_pattern=DEFAULT_REQ_RK_PATTERN,
                  resp_exchange=DEFAULT_RESP_EXCHANGE, custom_exceptions=None,
                  log=None, loglevel=None, **amqp_params):
 
