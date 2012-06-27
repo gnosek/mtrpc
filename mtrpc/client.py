@@ -108,7 +108,7 @@ class MTRPCProxy(object):
 
     """
 
-    def __init__(self, req_exchange, req_rk_pattern=DEFAULT_REQ_RK_PATTERN,
+    def __init__(self, req_exchange=None, req_rk_pattern=DEFAULT_REQ_RK_PATTERN,
                  resp_exchange=DEFAULT_RESP_EXCHANGE, custom_exceptions=None,
                  log=None, loglevel=None, **amqp_params):
 
@@ -117,7 +117,7 @@ class MTRPCProxy(object):
         Arguments:
 
         * req_exchange (str) -- name of AMQP exchange to be used to send
-          RPC-requests (obligatory argument);
+          RPC-requests (optional, but must be passed either here, or to _call);
 
         * req_rk_pattern (str) -- pattern of routing key to be used to
           send requests (obligatory argument); it may contain some of
@@ -243,9 +243,15 @@ class MTRPCProxy(object):
             raise
 
 
-    def _call(self, full_name, call_args, call_kwargs):
+    def _call(self, full_name, call_args, call_kwargs, exchange=None):
 
         "Remotely call a procedure (RPC-method)"
+
+        if exchange is None:
+            exchange = self._req_exchange
+
+        if exchange is None:
+            raise errors.RPCClientError('Must specify exchange either in constructor, or in _call')
 
         all_args = itertools.chain(map(repr, call_args),
                                    ('{0}={1!r}'.format(key, val)
@@ -260,9 +266,9 @@ class MTRPCProxy(object):
             try:
                 msg = self._prepare_msg(full_name, call_args,
                                         call_kwargs, resp_queue)
-                routing_key = self._prepare_routing_key(full_name)
+                routing_key = self._prepare_routing_key(full_name, exchange)
                 self._amqp_channel.basic_publish(msg,
-                                                 exchange=self._req_exchange,
+                                                 exchange=exchange,
                                                  routing_key=routing_key,
                                                  mandatory=True,
                                                  immediate=True)
@@ -349,14 +355,14 @@ class MTRPCProxy(object):
                                  .format(request_dict, traceback.format_exc()))
 
 
-    def _prepare_routing_key(self, full_name):
+    def _prepare_routing_key(self, full_name, exchange):
         split_name = full_name.split('.')
         return self._req_rk_pattern.format(
                 full_name=full_name,
                 local_name=split_name[-1],
                 parentmod_name='.'.join(split_name[:-1]),
                 split_name=split_name,
-                req_exchange=self._req_exchange,
+                req_exchange=exchange,
                 resp_exchange=self._resp_exchange,
         )
 
