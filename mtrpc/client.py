@@ -243,7 +243,7 @@ class MTRPCProxy(object):
             raise
 
 
-    def _call(self, full_name, call_args, call_kwargs, exchange=None):
+    def _call(self, full_name, call_args, call_kwargs, exchange=None, custom_exceptions=None):
 
         "Remotely call a procedure (RPC-method)"
 
@@ -252,6 +252,12 @@ class MTRPCProxy(object):
 
         if exchange is None:
             raise errors.RPCClientError('Must specify exchange either in constructor, or in _call')
+
+        if custom_exceptions is None:
+            custom_exceptions = self._custom_exceptions
+
+        if custom_exceptions is None:
+            custom_exceptions = {}
 
         all_args = itertools.chain(map(repr, call_args),
                                    ('{0}={1!r}'.format(key, val)
@@ -293,7 +299,7 @@ class MTRPCProxy(object):
                                      "{0!r} differs from RPC-request id {1!r}"
                                      .format(response.id, resp_queue))
             elif response.error:
-                self._raise_received_error(response.error)
+                self._raise_received_error(response.error, custom_exceptions)
             else:
                 return response.result
 
@@ -367,7 +373,7 @@ class MTRPCProxy(object):
         )
 
 
-    def _raise_received_error(self, received_error):
+    def _raise_received_error(self, received_error, custom_exceptions):
         try:
             try:
                 exctype_name = received_error.get('name', '')
@@ -380,7 +386,7 @@ class MTRPCProxy(object):
                 raise Exception
 
             try:
-                exctype = self._custom_exceptions[exctype_name]
+                exctype = custom_exceptions[exctype_name]
             except KeyError:
                 try:
                     exctype = getattr(errors, exctype_name)
