@@ -226,6 +226,15 @@ class MTRPCProxy(object):
         self._resp_queue = self._bind_and_consume()
 
 
+    def _amqp_reopen_channel(self):
+        if self._amqp_channel.channel_id:
+            try:
+                self._amqp_channel.close()
+            except Exception:
+                pass
+        self._amqp_channel = self._amqp_conn.channel()
+        self._resp_queue = self._bind_and_consume()
+
     def _call(self, full_name, call_args, call_kwargs, exchange=None, custom_exceptions=None):
         with self._call_lock:
             return self._call_unlocked(full_name, call_args, call_kwargs, exchange, custom_exceptions)
@@ -270,6 +279,10 @@ class MTRPCProxy(object):
                                          .format(message.reply_to, resp_queue))
                 raise amqp.exceptions.AMQPChannelException(
                     reply_code, reply_text, (exchange, rk))
+
+        except amqp.exceptions.AMQPException:
+            self._amqp_reopen_channel()
+            raise
 
         finally:
             response = self._response
