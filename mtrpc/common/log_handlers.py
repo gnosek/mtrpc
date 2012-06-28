@@ -33,7 +33,7 @@ class SendmailHandler(logging.Handler):
          return '{hostname}: {levelname} {message}'.format(
             hostname=self.hostname,
             levelname=record.levelname,
-            message=(record.message.split('\n', 1)[0]),
+            message=(record.getMessage().split('\n', 1)[0]),
             )
 
    def emit(self, record):
