@@ -195,7 +195,11 @@ class MTRPCProxy(object):
         "Close the proxy"
         try:
             try:
-                self._amqp_channel.close()
+                try:
+                    if self._amqp_channel.connection:
+                        self._amqp_channel.basic_cancel(self._resp_queue)
+                finally:
+                    self._amqp_channel.close()
             finally:
                 self._amqp_conn.close()
         finally:
@@ -226,21 +230,7 @@ class MTRPCProxy(object):
         self._log.info('Initializing AMQP channel and connection...')
         self._amqp_conn = amqp.Connection(**amqp_params)
         self._amqp_channel = self._amqp_conn.channel()
-
-
-    def _amqp_close(self):
-        "Close AMQP communication"
-        self._log.info('Closing AMQP channel and connection...')
-        try:
-            try:
-                self._amqp_channel.close()
-            finally:
-                self._amqp_conn.close()
-        except Exception:
-            self._log.error('Error when trying to close AMQP channel '
-                                'or connection. Raising exception...')
-            self._log.debug('Exception details', exc_info=True)
-            raise
+        self._resp_queue = self._bind_and_consume()
 
 
     def _call(self, full_name, call_args, call_kwargs, exchange=None, custom_exceptions=None):
@@ -268,7 +258,7 @@ class MTRPCProxy(object):
             raise errors.RPCClientError('MTRPCProxy instance is already closed')
 
         with self._call_lock:
-            resp_queue = self._bind_and_consume()
+            resp_queue = self._resp_queue
             try:
                 msg = self._prepare_msg(full_name, call_args,
                                         call_kwargs, resp_queue)
@@ -291,8 +281,6 @@ class MTRPCProxy(object):
             finally:
                 response = self._response
                 self._response = None
-                if self._amqp_channel.connection:
-                    self._amqp_channel.basic_cancel(resp_queue)
 
             if response.id != resp_queue:
                 raise errors.RPCClientError("It should not happen! RPC-response id "
