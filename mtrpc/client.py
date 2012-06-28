@@ -175,10 +175,6 @@ class MTRPCProxy(object):
             return _RPCModuleMethodProxy(self, submod_name)
 
 
-    def __nonzero__(self):
-        return not self._closed
-
-
     def __enter__(self):
         return self
 
@@ -195,15 +191,12 @@ class MTRPCProxy(object):
         "Close the proxy"
         try:
             try:
-                try:
-                    if self._amqp_channel.connection:
-                        self._amqp_channel.basic_cancel(self._resp_queue)
-                finally:
-                    self._amqp_channel.close()
+                if self._amqp_channel.connection:
+                    self._amqp_channel.basic_cancel(self._resp_queue)
             finally:
-                self._amqp_conn.close()
+                self._amqp_channel.close()
         finally:
-            self._closed = True
+            self._amqp_conn.close()
 
 
     def _logging_init(self, log, loglevel):
@@ -257,9 +250,6 @@ class MTRPCProxy(object):
                                    ('{0}={1!r}'.format(key, val)
                                     for key, val in call_kwargs.iteritems()))
         self._log.info('* remote call: %s(%s)', full_name, ', '.join(all_args))
-
-        if self._closed:
-            raise errors.RPCClientError('MTRPCProxy instance is already closed')
 
         resp_queue = self._resp_queue
         try:
