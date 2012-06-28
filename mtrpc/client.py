@@ -187,6 +187,16 @@ class MTRPCProxy(object):
         self._close()
 
 
+    def _is_valid(self):
+        try:
+            self._amqp_channel.flow(True)
+            return True
+        except Exception as exc:
+            self._log.warn('Lost connection to broker: {0} {1!s}'.format(
+                exc.__class__.__name__, exc), exc_info=True)
+            return False
+
+
     def _close(self):
         "Close the proxy"
         try:
