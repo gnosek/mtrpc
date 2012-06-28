@@ -234,6 +234,10 @@ class MTRPCProxy(object):
 
 
     def _call(self, full_name, call_args, call_kwargs, exchange=None, custom_exceptions=None):
+        with self._call_lock:
+            return self._call_unlocked(full_name, call_args, call_kwargs, exchange, custom_exceptions)
+
+    def _call_unlocked(self, full_name, call_args, call_kwargs, exchange=None, custom_exceptions=None):
 
         "Remotely call a procedure (RPC-method)"
 
@@ -257,39 +261,38 @@ class MTRPCProxy(object):
         if self._closed:
             raise errors.RPCClientError('MTRPCProxy instance is already closed')
 
-        with self._call_lock:
-            resp_queue = self._resp_queue
-            try:
-                msg = self._prepare_msg(full_name, call_args,
-                                        call_kwargs, resp_queue)
-                routing_key = self._prepare_routing_key(full_name, exchange)
-                self._amqp_channel.basic_publish(msg,
-                                                 exchange=exchange,
-                                                 routing_key=routing_key,
-                                                 mandatory=True,
-                                                 immediate=True)
-                self._amqp_channel.wait()
-                if not self._response:
-                    reply_code, reply_text, exchange, rk, message = self._amqp_channel.returned_messages.get()
-                    if message.reply_to != resp_queue:
-                        raise errors.RPCClientError("It should not happen! RPC-error id "
-                                             "{0!r} differs from RPC-request id {1!r}"
-                                             .format(message.reply_to, resp_queue))
-                    raise amqp.exceptions.AMQPChannelException(
-                        reply_code, reply_text, (exchange, rk))
+        resp_queue = self._resp_queue
+        try:
+            msg = self._prepare_msg(full_name, call_args,
+                                    call_kwargs, resp_queue)
+            routing_key = self._prepare_routing_key(full_name, exchange)
+            self._amqp_channel.basic_publish(msg,
+                                             exchange=exchange,
+                                             routing_key=routing_key,
+                                             mandatory=True,
+                                             immediate=True)
+            self._amqp_channel.wait()
+            if not self._response:
+                reply_code, reply_text, exchange, rk, message = self._amqp_channel.returned_messages.get()
+                if message.reply_to != resp_queue:
+                    raise errors.RPCClientError("It should not happen! RPC-error id "
+                                         "{0!r} differs from RPC-request id {1!r}"
+                                         .format(message.reply_to, resp_queue))
+                raise amqp.exceptions.AMQPChannelException(
+                    reply_code, reply_text, (exchange, rk))
 
-            finally:
-                response = self._response
-                self._response = None
+        finally:
+            response = self._response
+            self._response = None
 
-            if response.id != resp_queue:
-                raise errors.RPCClientError("It should not happen! RPC-response id "
-                                     "{0!r} differs from RPC-request id {1!r}"
-                                     .format(response.id, resp_queue))
-            elif response.error:
-                self._raise_received_error(response.error, custom_exceptions)
-            else:
-                return response.result
+        if response.id != resp_queue:
+            raise errors.RPCClientError("It should not happen! RPC-response id "
+                                 "{0!r} differs from RPC-request id {1!r}"
+                                 .format(response.id, resp_queue))
+        elif response.error:
+            self._raise_received_error(response.error, custom_exceptions)
+        else:
+            return response.result
 
 
     def _bind_and_consume(self):
