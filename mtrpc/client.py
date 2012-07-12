@@ -279,7 +279,7 @@ class MTRPCProxy(object):
                                              exchange=exchange,
                                              routing_key=routing_key,
                                              mandatory=True,
-                                             immediate=True)
+                                             immediate=False)
             self._amqp_channel.wait()
             if not self._response:
                 reply_code, reply_text, exchange, rk, message = self._amqp_channel.returned_messages.get()
