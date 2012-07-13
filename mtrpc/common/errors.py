@@ -13,15 +13,13 @@
 * rest RPC*Error classes -- raised in mtrpc.server.* classes, sent to
   client and then re-raised; see the class docstrings for more info;
 
-* MethodExcWrapper class and raise_exc() function -- to be used in
-  RPC-method definitions; see the class/function-docstrings for more info.
-
 """
 
 
 import sys
 import traceback
-from decorator import decorator
+import warnings
+import itertools
 
 class RPCError(Exception):
     "Base MTRPC exception"
@@ -59,50 +57,10 @@ class RPCClientError(RPCError):
     "Error detected on client side"
 
 
-#
-# A server wrapper-exception and a function to be used in RPC-method defs
-
-class MethodExcWrapper(Exception):
-
-    """RPC-method-call exception wrapper.
-
-    If caught in threads.RPCTaskThread.run() -- the included exception
-    (not the wrapper) will be sent to the client. (For security reasons,
-    other exceptions -- that are not wrapped -- are treated as unexpected
-    and reported to the client as RPCInternalServerError, without any
-    exception details).
-
-    """
-
-    def __init__(self, wrapped_exc=None):
-
-        """The wrapped exception can be:
-        
-        * passed explicitly into the constructor, or
-        * taken from sys.exc_info (wrapper initialization should be done
-          when the wrapped exception is being handled).
-
-        """
-
-        Exception.__init__(self, wrapped_exc)
-        if wrapped_exc is not None:
-            self.wrapped_exc = wrapped_exc
-            self.wrapped_exc_type = type(wrapped_exc)
-        else:
-            self.wrapped_exc_type, self.wrapped_exc = sys.exc_info()[:2]
-
-
-    def __str__(self):
-        return '{0.__name__} -- {1}'.format(self.wrapped_exc_type,
-                                            self.wrapped_exc)
-
-
 def raise_exc(exception, *args, **kwargs):
 
-    """Wrap a given exception with a MethodExcWrapper instance (raising it).
-
-    It's a convenience function. The `exception' argument should be an
-    exception type or instance.
+    """Simply raise an exception. This is a compat wrapper for the old
+    MethodExcWrapper hiding exceptions in the name of security
 
     If any other arguments are given:
     * if the `exception' argument is a type -- they are used to create its
@@ -111,6 +69,16 @@ def raise_exc(exception, *args, **kwargs):
 
     """
 
+    if args or kwargs:
+        all_args = itertools.chain(map(repr, args),
+                                   ('{0}={1!r}'.format(key, val)
+                                    for key, val in kwargs.iteritems()))
+        warnings.warn('Call to raise_exc({0}, {1})'.format(
+            exception, ', '.join(all_args)), category=DeprecationWarning)
+    else:
+        warnings.warn('Call to raise_exc({0})'.format(
+            exception), category=DeprecationWarning)
+
     if not (args or kwargs):
         wrapped_exc = exception
     elif isinstance(exception, type):
@@ -118,19 +86,14 @@ def raise_exc(exception, *args, **kwargs):
     else:
         raise TypeError("Cannot instantiate {0!r} -- it's not "
                         "an exception type object".format(exception))
-    raise MethodExcWrapper(wrapped_exc)
+    raise wrapped_exc
 
 
 def wrap_exceptions(exc_base_class):
 
-    """Wrap exceptions derived from exc_base_class as passable over MTRPC"""
+    """Dummy for API compatibility"""
 
     def make_wrapper(func):
-        def wrapper(func, *args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except exc_base_class as exc:
-                raise_exc(exc)
-        return decorator(wrapper, func)
+        return func
     return make_wrapper
 

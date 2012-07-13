@@ -1125,21 +1125,10 @@ class RPCTaskThread(threading.Thread):
                 (origin_method_pymod
                 ) = self.rpc_tree.method_names2pymods[request.method]
 
-            except RPCNotFoundError:
-                self.log.debug('Exception related to access check:',
-                               exc_info=True)
-                exc_type, exc = sys.exc_info()[:2]
-
-            except RPCError:
-                self.log.debug('Exception related to malformed request:',
-                               exc_info=True)
-                exc_type, exc = sys.exc_info()[:2]
-
             except Exception:
-                self.log.critical('Server misconfigured or other problem:',
-                                  exc_info=True)
-                exc_type = RPCInternalServerError
-                exc = RPCInternalServerError('Internal server error')
+                self.log.error('Error while preparing method call:',
+                               exc_info=True)
+                exc_type, exc = sys.exc_info()[:2]
 
             if exc_type is None:
                 self.log.info('Calling %s%s', request.method,
@@ -1172,26 +1161,11 @@ class RPCTaskThread(threading.Thread):
                     exc_type = RPCInternalServerError
                     exc = RPCInternalServerError('Internal server error')
 
-                except MethodExcWrapper as meth_exc_wrapper:
-                    log_entry = ('Exception raised during '
-                                 'execution of RPC-method %r: %s',
-                                 request.method, meth_exc_wrapper)
-                    self.log.debug(*log_entry)
-                    module_log = getattr(origin_method_pymod, RPC_LOG, None)
-                    if module_log is not None:
-                        module_log.error(*log_entry)
-                    exc_type = meth_exc_wrapper.wrapped_exc_type
-                    exc = meth_exc_wrapper.wrapped_exc
-
-                except:
-                    self.log.error('Unexpected exception during '
-                                   'execution of RPC-method %r (to '
-                                   'be sent as RPCInternalServerError):',
+                except Exception as exc:
+                    self.log.error('Exception raised during '
+                                   'execution of RPC-method %r',
                                    request.method, exc_info=True)
-                    # for security reasons: to be sent as a misterious
-                    # RPCInternalServerError without exception details
-                    exc_type = RPCInternalServerError
-                    exc = RPCInternalServerError('Internal server error')
+                    exc_type = exc.__class__
 
                 else:
                     response_dict = dict(result=result,
