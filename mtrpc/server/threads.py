@@ -385,7 +385,7 @@ class AMQPClientServiceThread(ServiceThread):
         host_descr = amqp_params.get('host', '<default adress setting>')
 
         attempt_nr = 0
-        while True:
+        while not self.stopping:
             self.log.info('Connecting to AMQP broker at %s...', host_descr)
             try:
                 conn = amqp.Connection(**amqp_params)
@@ -934,13 +934,11 @@ class RPCManager(AMQPClientServiceThread):
     def _stop_the_responder(self, stopping):
         "Request the responder to stop"
         if threading.current_thread() is self:
-            (responder_stopping
-            ) = stopping._replace(reason='{0} {1} ({2})'
-                                         .format(MGR_REASON_PREFIX,
-                                                 self, stopping.reason))
+            reason = '{0} {1} ({2})'.format(
+                MGR_REASON_PREFIX, self, stopping.reason)
         else:
-            responder_stopping = stopping
-        self.result_fifo.put(responder_stopping)
+            reason = stopping.reason
+        self.responder.stop(reason, stopping.loglevel, stopping.force)
 
 
 
@@ -1069,14 +1067,19 @@ class RPCResponder(AMQPClientServiceThread):
                                ', '.join(sorted(map(str, task_threads))))
 
 
-    #@AMQPClientServiceThread.retry
-    #def manager_wakeup(self):
-    #    "Send 'wakeup' message to the manager (then it'll be able to stop)"
-    #    manager_wakeup_msg = amqp.Message('wakeup', delivery_mode=2)
-    #    self.amqp_channel.basic_publish(manager_wakeup_msg,
-    #                                    exchange=self.manager.wakeup_exchange,
-    #                                    routing_key
-    #                                    =self.manager.wakeup_routing_key)
+    def stop(self, reason='manual stop', loglevel='info', force=False):
+
+        """Stop the service thread; to be called from another thread.
+
+        force=True  => the responder will not wait for
+                       remaining tasks to being completed
+        """
+
+        stopping = Stopping(reason, loglevel, force)
+        if self._is_connected:
+            self.result_fifo.put(stopping)
+        else:
+            self.stopping = stopping
 
 
 
