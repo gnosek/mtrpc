@@ -205,6 +205,7 @@ class ServiceThread(threading.Thread):
             name = '{0}-{1}'.format(self.__class__.__name__, instance_id)
 
         threading.Thread.__init__(self, name=name)
+        self.daemon = True
         self._set_logger(kwargs.pop('log', None))
         try:
             self.stopping = None
