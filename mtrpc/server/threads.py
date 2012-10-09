@@ -217,7 +217,7 @@ class ServiceThread(threading.Thread):
             # optional after-init customization of instance attributes
             for key, value in attributes.iteritems():
                 setattr(self, key, value)
-        except:
+        except Exception:
             self.log.critical('Fatal error during initializing service '
                               'thread %s. Re-raising the exception:',
                               self, exc_info=True)
@@ -252,7 +252,7 @@ class ServiceThread(threading.Thread):
         try:
             self.log.info('Service thread started...')
             self.main()
-        except:
+        except Exception:
             self.log.critical('Service thread encountered uncommon error:',
                               exc_info=True)
         finally:
@@ -271,7 +271,7 @@ class ServiceThread(threading.Thread):
                 self.log.debug('Exception info:', exc_info=True)
                 reason = 'error: {0}'.format(exc)
                 self.stopping = Stopping(reason, loglevel='error', force=False)
-            except:
+            except Exception:
                 self.log.critical("Service thread activity broken with "
                                   "uncommon error:", exc_info=True)
                 reason = 'uncommon error: {0}'.format(sys.exc_info()[1])
@@ -906,7 +906,7 @@ class RPCManager(AMQPClientServiceThread):
                         self.final_callback(self)
                     except TypeError:
                         self.final_callback()
-                except:
+                except Exception:
                     self.log.exception('Error while tried to call '
                                        'the final callback:')
 
@@ -1205,7 +1205,7 @@ class RPCTaskThread(threading.Thread):
             self.result_fifo.put(result)
             self.log.debug('Result %r put into result fifo', result)
 
-        except:
+        except Exception:
             self.log.critical('Uncommon error (no result sent, '
                               'task thread terminates):', exc_info=True)
 

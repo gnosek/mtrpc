@@ -36,7 +36,7 @@ def main():
 
     try:
         args = a[1:]
-    except:
+    except Exception:
         args = []
 
     if not o.raw:
@@ -46,7 +46,7 @@ def main():
     with MTRPCProxy(**o.__dict__) as rpc:
         try:
             ret = getattr(rpc, meth)(*args)
-        except:
+        except Exception:
             logging.getLogger().error('RPC call failed', exc_info=True)
             retcode = 1
         else:

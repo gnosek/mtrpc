@@ -870,7 +870,7 @@ class MTRPCServerInterface(object):
             self.do_os_settings(force_daemon=force_daemon)
             self.load_rpc_tree(default_postinit_callable
                                =default_postinit_callable)
-        except:
+        except Exception:
             self.log.critical('Error during server configuration. '
                               'Raising exception...', exc_info=True)
             raise
@@ -911,7 +911,7 @@ class MTRPCServerInterface(object):
                                  force_daemon, default_postinit_callable)
             try:
                 self.start(final_callback=final_callback)
-            except:
+            except Exception:
                 self.log.critical('Error during server start. '
                                   'Raising exception...', exc_info=True)
                 raise
@@ -933,7 +933,7 @@ class MTRPCServerInterface(object):
                     sys.exit()   # => we must finalize the program here because
                                  # of strange effects on module namespaces
                                  # when control gets another module :-/
-                except:
+                except Exception:
                     self.log.critical('Error while handling or waiting for a '
                                       'system signal. Raising exception...',
                                       exc_info=True)
@@ -1126,7 +1126,7 @@ class MTRPCServerInterface(object):
                           '"restart" action starts...', signal_num)
             if self.stop(reason='restart', timeout=stopping_timeout):
                 self.restart_on()
-        except:
+        except Exception:
             self.log.critical('Error while restarting. Raising exception...',
                               exc_info=True)
             raise
@@ -1142,7 +1142,7 @@ class MTRPCServerInterface(object):
                 sys.exit()
         except SystemExit:
             raise
-        except:
+        except Exception:
             self.log.critical('Error while exiting. Raising exception...',
                               exc_info=True)
             raise
@@ -1157,7 +1157,7 @@ class MTRPCServerInterface(object):
                 sys.exit()
         except SystemExit:
             raise
-        except:
+        except Exception:
             self.log.critical('Error while force-exiting. Raising '
                               'exception...', exc_info=True)
             raise
