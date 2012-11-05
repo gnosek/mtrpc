@@ -1482,15 +1482,37 @@ def run_server(config_paths, daemon=False, pidfile_path=None):
         if server:
             server.stop()
 
+def run_cli(config_paths):
+    config_dict = dict()
+    for p in config_paths:
+        fp = config_file(p)
+        config_dict = loader.load_props(fp, config_dict)
+    server = MTRPCServerInterface.configure(
+            config_dict=config_dict,
+    )
+    import readline
+    import rlcompleter
+    import code
+
+    params = server.rpc_tree
+    readline.set_completer(rlcompleter.Completer(params).complete)
+    readline.parse_and_bind("tab:complete")
+
+    code.interact(local=params)
+
 def main():
     from optparse import OptionParser
     parser = OptionParser(usage='%prog [options] config_file...')
     parser.add_option('-d', '--daemon', dest='daemon', action='store_true', default=False, help='daemonize')
     parser.add_option('-p', '--pidfile', dest='pidfile', action='store', default=None, help='write pid to file')
+    parser.add_option('-c', '--cli', dest='cli', action='store_true', default=False, help='run CLI')
 
     (o, a) = parser.parse_args()
 
-    run_server(a, o.daemon, o.pidfile)
+    if o.cli:
+        run_cli(a)
+    else:
+        run_server(a, o.daemon, o.pidfile)
 
 if __name__ == '__main__':
     main()
