@@ -1087,3 +1087,27 @@ class RPCTree(Mapping):
     # instances are not hashable:
 
     __hash__ = None
+
+
+class RPCSubTree(object):
+    def build_attrs(self):
+        keys = set()
+        if self.prefix:
+            prefix = self.prefix + '.'
+        else:
+            prefix = ''
+        for key, method in self.item_dict.iteritems():
+            if not callable(method):
+                continue
+            if not key.startswith(prefix):
+                continue
+            k = key[len(prefix):]
+            head, tail = k.split('.', 1)
+            keys.add(head)
+        for k in keys:
+            setattr(self, k, RPCSubTree(self.item_dict, k))
+
+    def __init__(self, rpc_tree, prefix=''):
+        self.prefix = prefix
+        self.item_dict = rpc_tree._item_dict
+        self.build_attrs()

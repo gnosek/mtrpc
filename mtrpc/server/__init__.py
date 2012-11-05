@@ -1494,7 +1494,7 @@ def run_cli(config_paths):
     import rlcompleter
     import code
 
-    params = server.rpc_tree
+    params = dict(rpc=methodtree.RPCSubTree(server.rpc_tree))
     readline.set_completer(rlcompleter.Completer(params).complete)
     readline.parse_and_bind("tab:complete")
 
