@@ -28,6 +28,7 @@ import string
 import textwrap
 import traceback
 import warnings
+import sys
 
 from collections import defaultdict, \
                         Callable, Hashable, Mapping, \
@@ -235,6 +236,10 @@ class RPCMethod(RPCObject, Callable):
         self.help = RPCMethodHelp(self)
         self.full_name = full_name
         self.__doc__ = self.help.format(full_name)
+        try:
+            self.module = sys.modules[callable_obj.__module__]
+        except (AttributeError, KeyError):
+            self.module = None
 
     def _examine_and_prepare_arg_spec(self):
         spec = inspect.getargspec(self.callable_obj)
