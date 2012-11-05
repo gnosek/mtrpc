@@ -212,7 +212,7 @@ class RPCMethod(RPCObject, Callable):
     SUPPRESS_MUTABLE_ARG_WARNING_TAG = 'suppress_mutable_arg_warning'
 
 
-    def __init__(self, callable_obj):
+    def __init__(self, callable_obj, full_name=''):
 
         """Initialize with a callable object as the argument.
 
@@ -233,7 +233,8 @@ class RPCMethod(RPCObject, Callable):
         self.tags = RPCObjectTags(getattr(callable_obj, RPC_TAGS, None))
         self._examine_and_prepare_arg_spec()
         self.help = RPCMethodHelp(self)
-
+        self.full_name = full_name
+        self.__doc__ = self.help.format(full_name)
 
     def _examine_and_prepare_arg_spec(self):
         spec = inspect.getargspec(self.callable_obj)
@@ -746,7 +747,7 @@ class RPCTree(Mapping):
 
         rpc_module = self._get_rpc_mod(module_full_name,
                                        arg_name='module_full_name')
-        rpc_method = RPCMethod(callable_obj)
+        rpc_method = RPCMethod(callable_obj, method_full_name)
         self.method_names2pymods[method_full_name] = python_module
         rpc_module.add_method(method_local_name, rpc_method)
         self._item_dict[method_full_name] = rpc_method
