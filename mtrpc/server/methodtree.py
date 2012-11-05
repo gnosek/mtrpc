@@ -330,25 +330,19 @@ class RPCMethod(RPCObject, Callable):
         r.maxother = 60
         return r.repr(result)
 
-    def __call__(self, args, kwargs,
-                 access_dict, access_key_patt, access_keyhole_patt):
-
+    def __call__(self, *args, **kwargs):
         "Call the method"
 
         kwargs = utils.kwargs_to_str(kwargs)
 
-        if ACC_KWARGS.intersection(kwargs):
-            # ACCESS_... kwargs must not be given by RPC client
-            self._raise_arg_error(args, kwargs)
+        if not self._gets_access_dict:
+            kwargs.pop(ACCESS_DICT_KWARG, None)
 
-        if self._gets_access_dict:
-            kwargs[ACCESS_DICT_KWARG] = access_dict
+        if not self._gets_access_key:
+            kwargs.pop(ACCESS_KEY_KWARG, None)
 
-        if self._gets_access_key:
-            kwargs[ACCESS_KEY_KWARG] = access_key_patt
-
-        if self._gets_access_keyhole:
-            kwargs[ACCESS_KEYHOLE_KWARG] = access_keyhole_patt
+        if not self._gets_access_keyhole:
+            kwargs.pop(ACCESS_KEYHOLE_KWARG, None)
 
         try:
             # test given arguments (params)

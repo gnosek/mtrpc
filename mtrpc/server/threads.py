@@ -1133,15 +1133,12 @@ class RPCTaskThread(threading.Thread):
             if exc_type is None:
                 self.log.info('Calling %s%s', request.method,
                                rpc_method.format_args(request.params, request.kwparams))
+                kwargs = request.kwparams.copy()
+                kwargs[ACCESS_DICT_KWARG] = task.access_dict
+                kwargs[ACCESS_KEY_KWARG] = task.access_key_patt
+                kwargs[ACCESS_KEYHOLE_KWARG] = task.access_keyhole_patt
                 try:
-                    result = rpc_method(# the actual arguments (params):
-                                        args=request.params,
-                                        kwargs=request.kwparams,
-                                        # + access-related information:
-                                        access_dict=task.access_dict,
-                                        access_key_patt=task.access_key_patt,
-                                        access_keyhole_patt
-                                        =task.access_keyhole_patt)
+                    result = rpc_method(*request.params, **kwargs)
 
                 except RPCMethodArgError:
                     exc_type, orig_exc = sys.exc_info()[:2]
