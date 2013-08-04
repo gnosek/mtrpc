@@ -334,7 +334,7 @@ class AMQPClientServiceThread(ServiceThread):
     """Abstract class: service thread being AMQP client"""
 
     connect_attempts = 0      # attempts to (re)connect (0 means infinity)
-    try_action_attempts = 2   # attempts to (re)try action (0 means infinity)
+    try_action_attempts = 0   # attempts to (re)try action (0 means infinity)
     reconnect_interval = 1    # in seconds
 
 
