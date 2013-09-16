@@ -110,7 +110,7 @@ class MTRPCProxy(object):
 
     def __init__(self, req_exchange=None, req_rk_pattern=DEFAULT_REQ_RK_PATTERN,
                  resp_exchange=DEFAULT_RESP_EXCHANGE, custom_exceptions=None,
-                 log=None, loglevel=None, **amqp_params):
+                 log=None, loglevel=None, immediate=False, **amqp_params):
 
         """RPC-proxy initialization.
 
@@ -146,6 +146,8 @@ class MTRPCProxy(object):
         * loglevel (str or None) -- 'debug', 'info', 'warning', 'error'
           or 'critical' (default: None => default settings to be used);
 
+        * immediate (bool) -- publish request with "immediate" AMQP flag
+
         * amqp_params -- dict of keyword arguments for AMQP.Connection(),
           see amqplib.client_0_8.Connection.__init__() for details.
 
@@ -159,6 +161,7 @@ class MTRPCProxy(object):
         else:
             self._custom_exceptions = custom_exceptions
         self._resp_exchange = resp_exchange
+        self._immediate = immediate
 
         self._call_lock = threading.RLock()
         self._response = None
@@ -279,7 +282,7 @@ class MTRPCProxy(object):
                                              exchange=exchange,
                                              routing_key=routing_key,
                                              mandatory=True,
-                                             immediate=False)
+                                             immediate=self._immediate)
             self._amqp_channel.wait()
             if not self._response:
                 reply_code, reply_text, exchange, rk, message = self._amqp_channel.returned_messages.get()
