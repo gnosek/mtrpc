@@ -1103,111 +1103,107 @@ class RPCTaskThread(threading.Thread):
         return '<{0}>'.format(self.name)
 
 
-    def run(self):
+    def parse_request(self, task):
+        self.log.debug('Deserializing request message: %r...',
+                       task.request_message)
+        request = self._deserialize_request(task.request_message)
+        (rpc_method
+        ) = self.rpc_tree.try_to_obtain(request.method,
+                                        task.access_dict,
+                                        task.access_key_patt,
+                                        task.access_keyhole_patt,
+                                        required_type
+                                        =methodtree.RPCMethod)
+        return request, rpc_method
 
-        "Thread activity"
-
-        self.log.debug('Task thread started')
+    def call_rpc_method(self, request, rpc_method, task):
+        self.log.info('Calling %s%s', request.method,
+                      rpc_method.format_args(request.params, request.kwparams))
+        kwargs = request.kwparams.copy()
+        kwargs[ACCESS_DICT_KWARG] = task.access_dict
+        kwargs[ACCESS_KEY_KWARG] = task.access_key_patt
+        kwargs[ACCESS_KEYHOLE_KWARG] = task.access_keyhole_patt
         try:
-            task = self.task
-            exc_type = None
-            try:
-                self.log.debug('Deserializing request message: %r...',
-                               task.request_message)
-                request = self._deserialize_request(task.request_message)
-                (rpc_method
-                ) = self.rpc_tree.try_to_obtain(request.method,
-                                                task.access_dict,
-                                                task.access_key_patt,
-                                                task.access_keyhole_patt,
-                                                required_type
-                                                =methodtree.RPCMethod)
-                (origin_method_pymod
-                ) = self.rpc_tree.method_names2pymods[request.method]
+            result = rpc_method(*request.params, **kwargs)
 
-            except Exception:
-                self.log.error('Error while preparing method call:',
-                               exc_info=True)
-                exc_type, exc = sys.exc_info()[:2]
+        except RPCMethodArgError:
+            exc_type, orig_exc = sys.exc_info()[:2]
+            self.log.debug('Bad user arguments (params/kwparams) '
+                           'for %r RPC-method call. Exception info:',
+                           request.method, exc_info=True)
+            exc_args = list(orig_exc.args)
+            # cannot use .format due to other {items} potentially
+            # appearing in exc_args[0]
+            exc_args[0] = exc_args[0].replace('{name}', request.method)
+            raise exc_type(*exc_args)
 
-            if exc_type is None:
-                self.log.info('Calling %s%s', request.method,
-                               rpc_method.format_args(request.params, request.kwparams))
-                kwargs = request.kwparams.copy()
-                kwargs[ACCESS_DICT_KWARG] = task.access_dict
-                kwargs[ACCESS_KEY_KWARG] = task.access_key_patt
-                kwargs[ACCESS_KEYHOLE_KWARG] = task.access_keyhole_patt
-                try:
-                    result = rpc_method(*request.params, **kwargs)
+        except methodtree.BadAccessPatternError:
+            self.log.error('Bad access key or access keyhole '
+                           'pattern stated when calling RPC-method '
+                           '%r. Exception info:', exc_info=True)
+            raise RPCInternalServerError('Internal server error')
 
-                except RPCMethodArgError:
-                    exc_type, orig_exc = sys.exc_info()[:2]
-                    self.log.debug('Bad user arguments (params/kwparams) '
-                                   'for %r RPC-method call. Exception info:',
-                                   request.method, exc_info=True)
-                    exc_args = list(orig_exc.args)
-                    # cannot use .format due to other {items} potentially
-                    # appearing in exc_args[0]
-                    exc_args[0] = exc_args[0].replace('{name}', request.method)
-                    exc = exc_type(*exc_args)
+        except Exception as exc:
+            self.log.error('Exception raised during '
+                           'execution of RPC-method %r',
+                           request.method, exc_info=True)
+            raise
 
-                except methodtree.BadAccessPatternError:
-                    self.log.error('Bad access key or access keyhole '
-                                   'pattern stated when calling RPC-method '
-                                   '%r. Exception info:', exc_info=True)
-                    exc_type = RPCInternalServerError
-                    exc = RPCInternalServerError('Internal server error')
+        self.log.info('%s call completed: %s',
+                      request.method, rpc_method.format_result(result))
+        return result
 
-                except Exception as exc:
-                    self.log.error('Exception raised during '
-                                   'execution of RPC-method %r',
-                                   request.method, exc_info=True)
-                    exc_type = exc.__class__
+    def format_exception(self):
 
-                else:
-                    response_dict = dict(result=result,
-                                         error=None,
-                                         id=request.id)
-                    self.log.info('%s call completed: %s',
-                                   request.method, rpc_method.format_result(result))
+        exc_type, exc = sys.exc_info()[:2]
 
-            if exc_type is not None:
-                try:
-                    request_id = request.id
-                except NameError:
-                    self.log.warning("Could not get id from the request. "
-                                     "Using task's `reply to' instead...")
-                    request_id = task.reply_to  # should be equal to reqest.id
+        try:
+            exc_dict = exc.__getstate__()
+        except AttributeError:
+            exc_dict = exc.__dict__
+
+        try:
+            encoding.dumps(exc_dict)
+        except TypeError:
+            self.log.warning('Unserializable exception __dict__ ({0}): {1!r}'.format(
+                exc_type.__name__, exc_dict))
+            exc_dict = None
+
+        return dict(name=exc_type.__name__, message=str(exc), data=exc_dict)
 
 
-                try:
-                    exc_dict = exc.__getstate__()
-                except AttributeError:
-                    exc_dict = exc.__dict__
+    def send_response(self, result, error, request_id):
+        response_dict = {
+            'result': result,
+            'error': error,
+            'id': request_id,
+        }
+        response_message = self._serialize_response(response_dict)
 
-                try:
-                    encoding.dumps(exc_dict)
-                except TypeError:
-                    self.log.warning('Unserializable exception __dict__ ({0}): {1!r}'.format(
-                        exc_type.__name__, exc_dict))
-                    exc_dict = None
+        task = self.task
+        result = Result(task.id, task.reply_to, response_message)
+        self.result_fifo.put(result)
+        self.log.debug('Result %r put into result fifo', result)
 
-                error = dict(name=exc_type.__name__, message=str(exc), data=exc_dict)
-                response_dict = dict(result=None,
-                                     error=error,
-                                     id=request_id)
 
-            response_message = self._serialize_response(response_dict)
-            result = Result(task.id, task.reply_to, response_message)
-            self.result_fifo.put(result)
-            self.log.debug('Result %r put into result fifo', result)
+    def send_exception(self, request_id):
+        self.send_response(None, self.format_exception(), request_id)
 
+    def run(self):
+        "Thread activity"
+        self.log.debug('Task thread started')
+
+        task = self.task
+        request_id = task.reply_to
+        try:
+            request, rpc_method = self.parse_request(task)
+            request_id = request.id
+            result = self.call_rpc_method(request, rpc_method, task)
         except Exception:
-            self.log.critical('Uncommon error (no result sent, '
-                              'task thread terminates):', exc_info=True)
-
+            self.log.error('Error in RPC call:', exc_info=True)
+            self.send_exception(request_id)
         else:
-            self.log.debug('Task completed, task thread terminates...')
+            self.send_response(result, None, request.id)
 
 
     def _deserialize_request(self, request_message):
