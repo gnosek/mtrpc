@@ -379,15 +379,15 @@ class MTRPCProxy(object):
 
 
     def _raise_received_error(self, received_error, custom_exceptions):
+        exctype_name = '<UNKNOWN!>'
+        exc_message = '<UNKNOWN!>'
+        exc_data = None
         try:
             try:
                 exctype_name = received_error.get('name', '')
                 exc_message = received_error.get('message', '')
                 exc_data = received_error.get('data', None)
             except (TypeError, AttributeError):
-                exctype_name = '<UNKNOWN!>'
-                exc_message = '<UNKNOWN!>'
-                exc_data = None
                 raise Exception
 
             try:

@@ -383,7 +383,7 @@ class AMQPClientServiceThread(ServiceThread):
 
         host_descr = amqp_params.get('host', '<default adress setting>')
 
-        attempt_counter = itertools.count(1)
+        attempt_nr = 0
         while True:
             self.log.info('Connecting to AMQP broker at %s...', host_descr)
             try:
@@ -393,7 +393,7 @@ class AMQPClientServiceThread(ServiceThread):
             except Exception as exc:
                 self.log.warning('Connection failed')
                 self.log.debug('Exception info:', exc_info=True)
-                attempt_nr = next(attempt_counter)
+                attempt_nr += 1
                 if attempt_nr == self.connect_attempts:
                     break
                 time.sleep(self.reconnect_interval)
@@ -430,7 +430,8 @@ class AMQPClientServiceThread(ServiceThread):
 
         @functools.wraps(action)
         def reinit_retry_wrapper(self, *args, **kwargs):
-            attempt_counter = itertools.count(1)
+            attempt_nr = 0
+            err = RuntimeError
             while True:
                 self.log.debug('Action %r will be run...', action)
                 try:
@@ -442,7 +443,7 @@ class AMQPClientServiceThread(ServiceThread):
                     self.log.warning('Error during action %r', action)
                     self.log.warning('Exception info:', exc_info=True)
                     #self.log.debug('Exception info:', exc_info=True)  !TODO! docelowo raczej tak
-                    attempt_nr = next(attempt_counter)
+                    attempt_nr += 1
                     if attempt_nr == self.try_action_attempts:
                         err = exc  # (<- Py3.x compatibile way)
                         break

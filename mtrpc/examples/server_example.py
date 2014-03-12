@@ -18,6 +18,9 @@ force_daemon = ('-d' in cmdline_args) or ('--daemon' in cmdline_args)
 restart_lock = threading.Lock()
 final_callback = restart_lock.release
 # (^ to restart the server when the service threads are stopped)
+
+server = None
+
 try:
     # no inner server loop needed, we have the outer one here
     while True:
@@ -29,4 +32,5 @@ try:
             )
         time.sleep(0.5)
 except KeyboardInterrupt:
-    server.stop()
+    if server is not None:
+        server.stop()
