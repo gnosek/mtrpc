@@ -7,8 +7,6 @@
 
 
 
-from future_builtins import filter, map, zip
-
 import itertools
 import os.path
 import random

@@ -44,8 +44,6 @@ For more information about MTRPCProxy constructor arguments
 
 
 
-from future_builtins import filter, map, zip
-
 import __builtin__
 import itertools
 import logging
@@ -268,7 +266,7 @@ class MTRPCProxy(object):
         if custom_exceptions is None:
             custom_exceptions = {}
 
-        all_args = itertools.chain(map(repr, call_args),
+        all_args = itertools.chain(itertools.imap(repr, call_args),
                                    ('{0}={1!r}'.format(key, val)
                                     for key, val in call_kwargs.iteritems()))
         self._log.info('* remote call: %s(%s)', full_name, ', '.join(all_args))

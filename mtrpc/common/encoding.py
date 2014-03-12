@@ -31,6 +31,8 @@ class MtrpcJsonEncoder(json.JSONEncoder):
         return super(MtrpcJsonEncoder, self).default(o)
 
 if json_v26:
+    errmsg = json.decoder.errmsg
+
     # custom iterscan instead of dumb hardcoded default,
     # identical otherwise
     @json.scanner.pattern(r'{')

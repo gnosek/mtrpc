@@ -17,7 +17,7 @@ from ..common.utils import basic_postinit
 
 __rpc_doc__ = u'Standard MTRPC introspection methods'
 __rpc_methods__ = 'list', 'list_string', 'help', 'help_string'
-
+rpc_tree = None  # set by __rpc_postinit__
 
 def __rpc_postinit__(rpc_tree, mod, full_name, logging_settings, mod_globals):
 

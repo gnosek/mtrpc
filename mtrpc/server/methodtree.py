@@ -18,8 +18,6 @@ Terminology note
 
 
 
-from future_builtins import filter, map, zip
-
 import abc
 import inspect
 import itertools
@@ -362,7 +360,7 @@ class RPCMethod(RPCObject, Callable):
 
 
     def _raise_arg_error(self, args, kwargs):
-        a = map(repr, args)
+        a = itertools.imap(repr, args)
         kw = ('{0}={1!r}'.format(name, val)
               for name, val in sorted(kwargs.iteritems()))
         raise RPCMethodArgError("Cannot call method {{name}} -- "

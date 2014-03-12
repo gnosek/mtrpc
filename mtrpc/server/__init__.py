@@ -545,8 +545,6 @@ For information about AMQP routing keys, exchange and queue names etc.
 
 
 
-from future_builtins import filter, map, zip
-
 import functools
 import imp
 import json
@@ -871,7 +869,7 @@ class MTRPCServerInterface(object):
             self.load_rpc_tree(default_postinit_callable
                                =default_postinit_callable)
         except Exception:
-            self.log.critical('Error during server configuration. '
+            logging.critical('Error during server configuration. '
                               'Raising exception...', exc_info=True)
             raise
         else:
@@ -1045,7 +1043,7 @@ class MTRPCServerInterface(object):
                 ) = threads.BindingProps._make(binding_props)
             except (ValueError, TypeError):
                 raise ValueError("Illegal item in bindings section: "
-                                 "{0!r}".format(q_name_props))
+                                 "{0!r}".format(binding_props))
             else:
                 bindings.append(binding_props)
         config['bindings'] = bindings
@@ -1408,7 +1406,7 @@ class MTRPCServerInterface(object):
 
 
     @classmethod
-    def write_config_skeleton(dest_path, config_stub=None):
+    def write_config_skeleton(cls, dest_path, config_stub=None):
         "Write config skeleton into file (you'll adjust that file by hand)"
         if config_stub is None:
             config_stub = cls.make_config_stub()

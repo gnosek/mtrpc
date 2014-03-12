@@ -117,8 +117,6 @@ Responder (publisher) queue name:
 
 
 
-from future_builtins import filter, map, zip
-
 import abc
 import functools
 import hashlib
@@ -136,6 +134,7 @@ from amqplib import client_0_8 as amqp
 from amqplib.client_0_8 import transport as amqp_transport
 
 from . import methodtree
+import errno
 from ..common import utils
 from ..common import encoding
 from ..common.const import *
@@ -1214,7 +1213,7 @@ class RPCTaskThread(threading.Thread):
         try:
             message_data = encoding.loads(request_message)
         except ValueError:
-            raise RPCDeserializationError(request_message)
+            raise RPCServerDeserializationError(request_message)
 
         try:
             message_data.setdefault('kwparams', {})

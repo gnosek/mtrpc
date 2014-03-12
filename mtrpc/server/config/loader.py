@@ -173,7 +173,6 @@ def walk(path, value):
     >>> walk('foo.bar[0]', 3)
     {'foo': {'bar': [3]}}
     """
-    import logging
     key, index, remainder = get_path_element(path)
     if not remainder:
         return merge(None, index, key, value)
