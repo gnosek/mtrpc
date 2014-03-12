@@ -18,7 +18,6 @@ A simple example
 
     MTRPCServerInterface.configure_and_start(
             config_path='server_simple_example_conf.json',
-            loop_mode=True,    # <- stay there and wait for OS signals
             final_callback=MTRPCServerInterface.restart_on,
     )
 
@@ -678,11 +677,7 @@ class MTRPCServerInterface(object):
       call the start() method.
 
     * configure_and_start() -- do the same what configure() does *plus* start
-      the server, and then:
-
-      * either return immediately (if `loop_mode' argument is false),
-      * or stay and wait for KeyboardInterrupt or OS signals (if `loop_mode'
-        argument is true).
+      the server
 
     See documentation of these methods for detailed info about arguments.
 
@@ -880,7 +875,6 @@ class MTRPCServerInterface(object):
     def configure_and_start(cls, config_path=None, config_dict=None,
                             force_daemon=False,
                             default_postinit_callable=utils.basic_postinit,
-                            loop_mode=False,
                             final_callback=None):
 
         """The same what configure() does, then run the server.
@@ -889,55 +883,25 @@ class MTRPCServerInterface(object):
 
         Optional arguments:
 
-        * loop_mode
         * force_daemon
         * default_postinit_callable
         -- see: configure();
-
-        * loop_mode (bool) --
-          if True => stay here waiting for KeyboardInterrupt, an OS signal
-                     or restart request (setting _restart attribute to True),
-          if False => return immediately after server start;
 
         * final_callback (callable object) -- to be called from the
           manager thread before it terminates.
 
         """
 
-        while True:
-            self = cls.configure(config_path, config_dict,
-                                 force_daemon, default_postinit_callable)
-            try:
-                self.start(final_callback=final_callback)
-            except Exception:
-                self.log.critical('Error during server start. '
-                                  'Raising exception...', exc_info=True)
-                raise
+        self = cls.configure(config_path, config_dict,
+                             force_daemon, default_postinit_callable)
+        try:
+            self.start(final_callback=final_callback)
+        except Exception:
+            self.log.critical('Error during server start. '
+                              'Raising exception...', exc_info=True)
+            raise
 
-            if not loop_mode:
-                # non-loop mode: return the instance object immediately
-                return self
-
-            else:
-                # loop mode: wait for a restart/OS signals
-                try:
-                    signal.pause()
-                except SystemExit:  # probably raised by a signal handler
-                    self.log.debug('System exit...')
-                    raise
-                except KeyboardInterrupt:
-                    self.log.debug('Keyboard interrupt...')
-                    self.stop()  # it may be Ctrl+C -caused in non-deamon mode
-                    sys.exit()   # => we must finalize the program here because
-                                 # of strange effects on module namespaces
-                                 # when control gets another module :-/
-                except Exception:
-                    self.log.critical('Error while handling or waiting for a '
-                                      'system signal. Raising exception...',
-                                      exc_info=True)
-                    raise
-                else:
-                    self._restart = False
+        return self
 
 
     # it is usefuf as final_callback in loop mode
@@ -1469,7 +1433,6 @@ def run_server(config_paths, daemon=False, pidfile_path=None):
                 server = MTRPCServerInterface.configure_and_start(
                         config_dict=config_dict,
                         force_daemon=daemon,
-                        loop_mode=False,  # <- return immediately
                         final_callback=final_callback,
                 )
                 if daemon and pidfile_path:

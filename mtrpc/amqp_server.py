@@ -39,7 +39,6 @@ try:
             server = MTRPCServerInterface.configure_and_start(
                     config_dict=config_dict,
                     force_daemon=force_daemon,
-                    loop_mode=False,  # <- return immediately
                     final_callback=final_callback,
             )
         signal.pause()
