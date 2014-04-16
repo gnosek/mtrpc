@@ -526,12 +526,14 @@ class RPCTree(Mapping):
         self.method_names2pymods = {}  # maps method full names to the
                                        # Python modules that the method
                                        # callables were taken from
+        self.rpc_mode = None  # 'server' or 'cli'
 
 
     def build(self,
               root_pymod=None,
               default_postinit_callable=(lambda: None),
-              postinit_kwargs=None):
+              postinit_kwargs=None,
+              rpc_mode='server'):
 
         "Build the tree (populate it with RPC-modules/methods)"
 
@@ -540,6 +542,9 @@ class RPCTree(Mapping):
                                " more than once -- it has been already done")
         if postinit_kwargs is None:
             postinit_kwargs = {}
+
+        self.rpc_mode = rpc_mode
+
         self._build_subtree(root_pymod, '',
                             default_postinit_callable, postinit_kwargs,
                             ancestor_pymods=set(), initialized_pymods={},

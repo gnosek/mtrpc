@@ -826,7 +826,7 @@ class MTRPCServerInterface(object):
     @classmethod
     def configure(cls, config_path=None, config_dict=None,
                   force_daemon=False,
-                  default_postinit_callable=utils.basic_postinit):
+                  default_postinit_callable=utils.basic_postinit, rpc_mode='server'):
 
         """Get the instance, load config + configure (don't start) the server.
 
@@ -841,6 +841,9 @@ class MTRPCServerInterface(object):
         * default_postinit_callable (callable object) -- to be passed to
           methodtree.RPCTree.build_new(); default: common.utils.basic_postinit.
 
+        * rpc_mode -- either 'server' or 'cli'; not used directly in mtrpc but
+          modules may wish to differentiate, e.g. not spawn extra threads
+
         """
 
         if (config_path is None) == (config_dict is None):
@@ -854,8 +857,7 @@ class MTRPCServerInterface(object):
                 self.config = self.validate_and_complete_config(config_dict)
             self.configure_logging()
             self.do_os_settings(force_daemon=force_daemon)
-            self.load_rpc_tree(default_postinit_callable
-                               =default_postinit_callable)
+            self.load_rpc_tree(default_postinit_callable=default_postinit_callable, rpc_mode=rpc_mode)
         except Exception:
             logging.critical('Error during server configuration. '
                               'Raising exception...', exc_info=True)
@@ -886,7 +888,7 @@ class MTRPCServerInterface(object):
         """
 
         self = cls.configure(config_path, config_dict,
-                             force_daemon, default_postinit_callable)
+                             force_daemon, default_postinit_callable, rpc_mode='server')
         try:
             self.start(final_callback=final_callback)
         except Exception:
@@ -1121,7 +1123,7 @@ class MTRPCServerInterface(object):
     #
     # RPC-methods tree loading
 
-    def load_rpc_tree(self, default_postinit_callable=utils.basic_postinit):
+    def load_rpc_tree(self, default_postinit_callable=utils.basic_postinit, rpc_mode='server'):
 
         "Load RPC-methods from modules specified by names or filesystem paths"
 
@@ -1199,7 +1201,8 @@ class MTRPCServerInterface(object):
                 rpc_tree.build(
                     root_mod,
                     default_postinit_callable,
-                    postinit_kwargs
+                    postinit_kwargs,
+                    rpc_mode
                 )
 
         except Exception:
@@ -1439,6 +1442,7 @@ def run_cli(config_paths):
         config_dict = loader.load_props(fp, config_dict)
     server = MTRPCServerInterface.configure(
             config_dict=config_dict,
+            rpc_mode='cli',
     )
     import readline
     import rlcompleter
