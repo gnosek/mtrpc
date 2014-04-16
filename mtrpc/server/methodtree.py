@@ -527,18 +527,6 @@ class RPCTree(Mapping):
                                        # Python modules that the method
                                        # callables were taken from
 
-    @classmethod
-    def build_new(cls,
-                  root_pymod=None,
-                  default_postinit_callable=(lambda: None),
-                  postinit_kwargs=None):
-
-        "Alternative constructor: initialize and build the tree"
-
-        self = cls()
-        self.build(root_pymod, default_postinit_callable, postinit_kwargs)
-        return self
-
 
     def build(self,
               root_pymod=None,

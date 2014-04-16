@@ -1191,14 +1191,16 @@ class MTRPCServerInterface(object):
                 self._set_warnings_logging_func(self.log,
                                                 warnings.showwarning)
 
-                # (RPCTree.build_new() creates a new RPC-tree object,
+                # creates a new RPC-tree object,
                 # walks recursively over submodules of the root module
                 # to collect names and callables -- to create RPC-modules
-                # and RPC-methods and populate the tree with them)
-                (rpc_tree
-                ) = methodtree.RPCTree.build_new(root_mod,
-                                                 default_postinit_callable,
-                                                 postinit_kwargs)
+                # and RPC-methods and populate the tree with them
+                rpc_tree = methodtree.RPCTree()
+                rpc_tree.build(
+                    root_mod,
+                    default_postinit_callable,
+                    postinit_kwargs
+                )
 
         except Exception:
             raise RuntimeError('Error when loading RPC-methods -- {0}'
