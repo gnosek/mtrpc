@@ -324,16 +324,9 @@ items:
 Defining and using RPC-modules and RPC-methods
 ----------------------------------------------
 
-MTRPCServerInterface.load_rpc_tree() method takes four arguments:
+MTRPCServerInterface.load_rpc_tree() method takes one argument:
 
-* paths,
-* imports,
-* postinit_kwargs,
 * default_postinit_callable.
-
-The first three of them, if omitted (typical usage), are replaced with
-appropriate config items from "rpc_tree_init" config section. The fourth
-argument defaults to mtrpc.common.utils.basic_postinit function.
 
 First, the Python modules specified in `paths' and `imports' are imported
 (together with any submodules imported by them and their submodules...).
@@ -1128,22 +1121,16 @@ class MTRPCServerInterface(object):
     #
     # RPC-methods tree loading
 
-    def load_rpc_tree(self, paths=None, imports=None, postinit_kwargs=None,
-                      default_postinit_callable=utils.basic_postinit):
+    def load_rpc_tree(self, default_postinit_callable=utils.basic_postinit):
 
         "Load RPC-methods from modules specified by names or filesystem paths"
 
         try:
             rpc_tree_init_conf = self.config.get('rpc_tree_init', {})
 
-            if paths is None:
-                paths = rpc_tree_init_conf.get('paths', [])
-
-            if imports is None:
-                imports = rpc_tree_init_conf.get('imports', [])
-
-            if postinit_kwargs is None:
-                postinit_kwargs = rpc_tree_init_conf.get('postinit_kwargs', {})
+            paths = rpc_tree_init_conf.get('paths', [])
+            imports = rpc_tree_init_conf.get('imports', [])
+            postinit_kwargs = rpc_tree_init_conf.get('postinit_kwargs', {})
 
             root_mod = types.ModuleType('_MTRPC_ROOT_MODULE_')
             root_method_list = []
