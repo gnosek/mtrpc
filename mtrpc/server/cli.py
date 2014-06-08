@@ -19,3 +19,8 @@ class MtrpcCli(MTRPCServerInterface):
 
     def stop(self, reason='manual stop', loglevel='info', force=False, timeout=30):
         pass
+
+
+if __name__ == '__main__':
+    cli = MtrpcCli()
+    cli.configure_and_start({})
