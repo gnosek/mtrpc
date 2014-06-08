@@ -155,6 +155,13 @@ class RPCObject(object):
             return u'\n'.join((first_line.strip(), textwrap.dedent(rest)))
 
 
+def format_result(result):
+    r = Repr()
+    r.maxstring = 60
+    r.maxother = 60
+    return r.repr(result)
+
+
 class RPCMethod(RPCObject, Callable):
     """Callable object wrapper with some additional attributes.
 
@@ -254,7 +261,7 @@ class RPCMethod(RPCObject, Callable):
                                          MutableSet,
                                          MutableMapping)))
 
-    def format_args(self, args, kwargs):
+    def format_args(self, args, kw):
         """Format arguments in a way suitable for logging"""
 
         spec = inspect.getargspec(self.callable_obj)
@@ -265,8 +272,8 @@ class RPCMethod(RPCObject, Callable):
         for i, arg in enumerate(spec.args):
             if 'passw' in arg:
                 real_args[i] = '***'
-            elif arg in kwargs:
-                real_args[i] = kwargs[arg]
+            elif arg in kw:
+                real_args[i] = kw[arg]
 
         spec_args = [a for a in spec.args if a not in ACC_KWARGS]
         real_args[len(spec_args):] = []
@@ -278,39 +285,33 @@ class RPCMethod(RPCObject, Callable):
         return inspect.formatargspec(spec_args, spec.varargs,
                                      spec.keywords, real_args, formatvalue=lambda v: '=' + v)
 
-    def format_result(self, result):
-        r = Repr()
-        r.maxstring = 60
-        r.maxother = 60
-        return r.repr(result)
-
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kw):
         """Call the method"""
 
         if not self._gets_access_dict:
-            kwargs.pop(ACCESS_DICT_KWARG, None)
+            kw.pop(ACCESS_DICT_KWARG, None)
 
         if not self._gets_access_key:
-            kwargs.pop(ACCESS_KEY_KWARG, None)
+            kw.pop(ACCESS_KEY_KWARG, None)
 
         if not self._gets_access_keyhole:
-            kwargs.pop(ACCESS_KEYHOLE_KWARG, None)
+            kw.pop(ACCESS_KEYHOLE_KWARG, None)
 
         try:
             # test given arguments (params)
-            self._arg_test_callable(*args, **kwargs)
+            self._arg_test_callable(*args, **kw)
         except TypeError:
-            kwargs.pop(ACCESS_DICT_KWARG, None)
-            kwargs.pop(ACCESS_KEY_KWARG, None)
-            kwargs.pop(ACCESS_KEYHOLE_KWARG, None)
-            self._raise_arg_error(args, kwargs)
+            kw.pop(ACCESS_DICT_KWARG, None)
+            kw.pop(ACCESS_KEY_KWARG, None)
+            kw.pop(ACCESS_KEYHOLE_KWARG, None)
+            self._raise_arg_error(args, kw)
         else:
-            return self.callable_obj(*args, **kwargs)
+            return self.callable_obj(*args, **kw)
 
-    def _raise_arg_error(self, args, kwargs):
+    def _raise_arg_error(self, args, kw):
         a = itertools.imap(repr, args)
         kw = ('{0}={1!r}'.format(name, val)
-              for name, val in sorted(kwargs.iteritems()))
+              for name, val in sorted(kw.iteritems()))
         raise RPCMethodArgError("Cannot call method {{name}} -- "
                                 "given arguments: ({0}) don't match "
                                 "method argument specification: {1}"
