@@ -178,6 +178,7 @@ class MTRPCServerInterface(object):
             sig_stopping_timeout=60,
         ),
     )
+    RPC_MODE = None
 
     _instance = None
     _server_iface_rlock = threading.RLock()
@@ -241,7 +242,7 @@ class MTRPCServerInterface(object):
     @classmethod
     def configure(cls, config_path=None, config_dict=None,
                   force_daemon=False,
-                  default_postinit_callable=utils.basic_postinit, rpc_mode='server'):
+                  default_postinit_callable=utils.basic_postinit):
 
         """Get the instance, load config + configure (don't start) the server.
 
@@ -273,7 +274,7 @@ class MTRPCServerInterface(object):
                 self.config = self.validate_and_complete_config(config_dict)
             self.configure_logging()
             self.do_os_settings(force_daemon=force_daemon)
-            self.load_rpc_tree(default_postinit_callable=default_postinit_callable, rpc_mode=rpc_mode)
+            self.load_rpc_tree(default_postinit_callable=default_postinit_callable, rpc_mode=self.RPC_MODE)
         except Exception:
             logging.critical('Error during server configuration. '
                              'Raising exception...', exc_info=True)
@@ -303,8 +304,7 @@ class MTRPCServerInterface(object):
 
         """
 
-        self = cls.configure(config_path, config_dict,
-                             force_daemon, default_postinit_callable, rpc_mode='server')
+        self = cls.configure(config_path, config_dict, force_daemon, default_postinit_callable)
         try:
             self.start(final_callback=final_callback)
         except Exception:
@@ -638,8 +638,7 @@ class MTRPCServerInterface(object):
     #
     # The actual server management
 
-    def start(self, config=None, rpc_tree=None, log=None,
-              wait_until_stopped=False, final_callback=None):
+    def start(self, final_callback=None):
 
         raise NotImplementedError()
 

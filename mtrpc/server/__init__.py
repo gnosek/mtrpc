@@ -548,7 +548,7 @@ from . import methodtree
 from . import daemonize
 from .config import loader
 from mtrpc.server.amqp import AmqpServer
-from mtrpc.server.core import MTRPCServerInterface
+from mtrpc.server.cli import MtrpcCli
 
 
 def config_file(config_path):
@@ -608,19 +608,9 @@ def run_cli(config_paths):
     for p in config_paths:
         fp = config_file(p)
         config_dict = loader.load_props(fp, config_dict)
-    server = MTRPCServerInterface.configure(
+    MtrpcCli.configure_and_start(
             config_dict=config_dict,
-            rpc_mode='cli',
     )
-    import readline
-    import rlcompleter
-    import code
-
-    params = dict(rpc=methodtree.RPCSubTree(server.rpc_tree))
-    readline.set_completer(rlcompleter.Completer(params).complete)
-    readline.parse_and_bind("tab:complete")
-
-    code.interact(local=params)
 
 def main():
     from optparse import OptionParser
