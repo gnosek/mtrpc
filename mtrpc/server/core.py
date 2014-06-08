@@ -349,31 +349,6 @@ class MTRPCServerInterface(object):
                     or field == 'postinit_kwargs' and isinstance(value, dict)):
                 raise ValueError("Illegal item in rpc_tree_init section:"
                                  " {0!r}: {1!r}".format(field, value))
-
-        # verify and prepare exchange types
-        for exchange, etype in config['exchange_types'].iteritems():
-            if not (isinstance(exchange, basestring)
-                    and isinstance(etype, basestring)):
-                raise ValueError("Illegal item in exchange_types section:"
-                                 " {0!r}: {1!r}".format(exchange, etype))
-
-        # verify and prepare binding properties (turn it into a list
-        # of threads.BindingProps namedtuple instances)
-        bindings = []
-        for binding_props in config['bindings']:
-            try:
-                if not all(isinstance(x, basestring)
-                           for x in binding_props):
-                    raise TypeError
-                (binding_props
-                ) = threads.BindingProps._make(binding_props)
-            except (ValueError, TypeError):
-                raise ValueError("Illegal item in bindings section: "
-                                 "{0!r}".format(binding_props))
-            else:
-                bindings.append(binding_props)
-        config['bindings'] = bindings
-
         return config
 
 
