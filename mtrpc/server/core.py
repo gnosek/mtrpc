@@ -12,7 +12,6 @@ import warnings
 from mtrpc.common import utils
 from mtrpc.common.const import DEFAULT_LOG_HANDLER_SETTINGS, RPC_METHOD_LIST
 from mtrpc.server import methodtree, threads, daemonize
-from mtrpc.server.config import loader
 
 
 
@@ -29,7 +28,7 @@ class MTRPCServerInterface(object):
     * get_instance() -- get (create if it does not exist) the
       MTRPCServerInterface instance; it doesn't do anything else, so
       after creating the instance your script is supposed to call
-      load_config(), configure_logging(), do_os_settings(), start()...
+      configure_logging(), do_os_settings(), start()...
 
     * configure() -- get the instance, read config file (see: above config
       file structure/content description), set up logging, OS-related stuff
@@ -46,7 +45,6 @@ class MTRPCServerInterface(object):
     Public instance methods
     ^^^^^^^^^^^^^^^^^^^^^^^
 
-    * load_config() -- load, parse, validate, adjust the config;
     * configure_logging() -- set up the server logger;
     * do_os_settings() -- set OS signal handlers and do some other things,
     * load_rpc_tree() -- load RPC-module/methods;
@@ -311,20 +309,6 @@ class MTRPCServerInterface(object):
     @classmethod
     def restart_on(cls):
         cls._instance._restart = True
-
-
-    def load_config(self, config_path):
-        "Load the config from a JSON file; check, adjust, return as a dict"
-        try:
-            with open(config_path) as config_file:
-                config = loader.load_props(config_file)
-                config = self.validate_and_complete_config(config)
-
-        except Exception:
-            raise RuntimeError("Can't load configuration -- {0}"
-                               .format(traceback.format_exc()))
-        self.config = config
-        return config
 
 
     @classmethod

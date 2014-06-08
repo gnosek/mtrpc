@@ -158,10 +158,6 @@ See: MTRPCServerInterface class documentation.
 Server configuration file structure and content
 -----------------------------------------------
 
-MTRPCServerInterface.load_config() loads configuration from a JSON-formatted
-file which content, after deserialization, would be a dict of the following
-items:
-
 * "rpc_tree_init": a dict (an obligatory item) -- containing:
 
   * "paths": a list (empty by default)
@@ -247,8 +243,8 @@ items:
   RPCManager.default_exchange_type will be used (by default it is
   equal to "topic");
 
-* bindings: a list (an obligatory item) -- contains 4-element lists (in
-  load_config() turned into threads.BindingProps namedtuple instances)
+* bindings: a list (an obligatory item) -- contains 4-element lists
+  (turned into threads.BindingProps namedtuple instances)
   of strings:
   [0] exchange involved in a particular binding,
   [1] routing key used with it,
