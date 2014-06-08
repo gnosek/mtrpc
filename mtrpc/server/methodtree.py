@@ -36,11 +36,9 @@ from ..common.errors import *
 from ..common.const import *
 
 
-
 #
 # Auxiliary types
 #
-
 class BadAccessPatternError(Exception):
     """Internal exception: key or keyhole pattern contains illegal {field}"""
 
@@ -54,7 +52,7 @@ class LogWarning(UserWarning):
 
 
 class RPCObjectHelp(object):
-    "Abstract class: help-text generator for RPC-method/RPC-module instance"
+    """Abstract class: help-text generator for RPC-method/RPC-module instance"""
 
     __metaclass__ = abc.ABCMeta
 
@@ -65,11 +63,11 @@ class RPCObjectHelp(object):
 
     @abc.abstractmethod
     def _format_head(self):
-        "Format the head line"
+        """Format the head line"""
 
     @abc.abstractmethod
     def format(self):
-        "Format as a (unicode) string"
+        """Format as a (unicode) string"""
 
     def _prepare_parts(self, name, head_indent, rest_indent):
         if self.rest_lines:
@@ -80,12 +78,12 @@ class RPCObjectHelp(object):
             return [head_indent, self.head.format(name=name), u'\n']
 
     def __iter__(self):
-        "Iterate over all help lines"
+        """Iterate over all help lines"""
         return itertools.chain((self.help_head,), self.rest_lines)
 
 
 class RPCMethodHelp(RPCObjectHelp):
-    "RPCMethod help-text generator"
+    """RPCMethod help-text generator"""
 
     def _format_head(self):
         argspec = self.rpc_object.formatted_arg_spec
@@ -95,13 +93,13 @@ class RPCMethodHelp(RPCObjectHelp):
     def format(self, name, with_meth='[blah]',
                meth_head_indent=(4 * u' ' + u'* '), mod_head_indent='[blah]',
                meth_rest_indent=(8 * u' '), mod_rest_indent='[blah]'):
-        "Format as a (unicode) string"
+        """Format as a (unicode) string"""
         parts = self._prepare_parts(name, meth_head_indent, meth_rest_indent)
         return u''.join(parts)
 
 
 class RPCModuleHelp(RPCObjectHelp):
-    "RPCModule help-text generator"
+    """RPCModule help-text generator"""
 
     DEFAULT_ROOT_NAME_SUBSTITUTE = "'' [the root]"
 
@@ -111,7 +109,7 @@ class RPCModuleHelp(RPCObjectHelp):
     def format(self, name, with_meth=True,
                meth_head_indent='[blah]', mod_head_indent=(u'Module: '),
                meth_rest_indent='[blah]', mod_rest_indent=(4 * u' ')):
-        "Format as a (unicode) string"
+        """Format as a (unicode) string"""
         if name == '':
             # the root RPC-module
             name = self.DEFAULT_ROOT_NAME_SUBSTITUTE
@@ -127,11 +125,11 @@ class RPCModuleHelp(RPCObjectHelp):
 #
 
 class RPCObject(object):
-    "Abstract class: RPC-method or RPC-module"
+    """Abstract class: RPC-method or RPC-module"""
 
     @staticmethod
     def _prepare_doc(doc):
-        "Prepare RPC-object doc (assert that it's Unicode, trim it etc.)"
+        """Prepare RPC-object doc (assert that it's Unicode, trim it etc.)"""
 
         if not doc:
             return u''
@@ -248,17 +246,16 @@ class RPCMethod(RPCObject, Callable):
         exec _arg_test_callable_str in _temp_namespace
         self._arg_test_callable = _temp_namespace['_arg_test_callable']
 
-
     @staticmethod
     def _check_arg_default(arg):
-        "Try to check if default val is immutable (test isn't 100%-reliable!)"
+        """Try to check if default val is immutable (test isn't 100%-reliable!)"""
         return (isinstance(arg, Hashable)
                 and not isinstance(arg, (MutableSequence,
                                          MutableSet,
                                          MutableMapping)))
 
     def format_args(self, args, kwargs):
-        "Format arguments in a way suitable for logging"
+        """Format arguments in a way suitable for logging"""
 
         spec = inspect.getargspec(self.callable_obj)
         defaults = list(spec.defaults or ())
@@ -288,7 +285,7 @@ class RPCMethod(RPCObject, Callable):
         return r.repr(result)
 
     def __call__(self, *args, **kwargs):
-        "Call the method"
+        """Call the method"""
 
         if not self._gets_access_dict:
             kwargs.pop(ACCESS_DICT_KWARG, None)
@@ -310,7 +307,6 @@ class RPCMethod(RPCObject, Callable):
         else:
             return self.callable_obj(*args, **kwargs)
 
-
     def _raise_arg_error(self, args, kwargs):
         a = itertools.imap(repr, args)
         kw = ('{0}={1!r}'.format(name, val)
@@ -331,7 +327,7 @@ class RPCModule(RPCObject, Mapping):
     """
 
     def __init__(self, doc=u''):
-        "Initialize; optionally with doc"
+        """Initialize; optionally with doc"""
         self._method_dict = {}  # maps RPC-method local names to RPC-methods
         self._submod_dict = {}  # maps RPC-module local names to RPC-methods
         # caches:
@@ -341,9 +337,8 @@ class RPCModule(RPCObject, Mapping):
         self.doc = doc
         self.help = RPCModuleHelp(self)
 
-
     def declare_attrs(self, doc):
-        "Add doc if needed, re-generate help text if needed"
+        """Add doc if needed, re-generate help text if needed"""
         if doc != u'':
             if self.doc:
                 assert self.doc == doc, (self.doc, doc)
@@ -351,9 +346,8 @@ class RPCModule(RPCObject, Mapping):
                 self.doc = doc
                 self.help = RPCModuleHelp(self)
 
-
     def add_method(self, local_name, rpc_method):
-        "Add a new method"
+        """Add a new method"""
         if not local_name:
             raise ValueError("Local RPC-name must not be empty")
         if local_name in self._method_dict:
@@ -365,9 +359,8 @@ class RPCModule(RPCObject, Mapping):
         self._sorted_method_items = None  # forget the cache
         self._method_dict[local_name] = rpc_method
 
-
     def add_submod(self, local_name, rpc_module):
-        "Add a new submodule"
+        """Add a new submodule"""
         if not local_name:
             raise ValueError("Local RPC-name must not be empty")
         if local_name in self._submod_dict:
@@ -379,66 +372,57 @@ class RPCModule(RPCObject, Mapping):
         self._sorted_submod_items = None  # forget the cache
         self._submod_dict[local_name] = rpc_module
 
-
     def loc_names2all(self):
         """Iterate over sorted (local name, method) pairs and
         (local name, submodule) pairs"""
         return itertools.chain(self.loc_names2methods(),
                                self.loc_names2submods())
 
-
     def loc_names2methods(self):
-        "Iterator over sorted (local name, method) pairs"
+        """Iterator over sorted (local name, method) pairs"""
         if self._sorted_method_items is None:
             # rebuild the cache
             self._sorted_method_items = sorted(self._method_dict.iteritems())
         return iter(self._sorted_method_items)
 
-
     def loc_names2submods(self):
-        "Iterator over sorted (local name, submodule) pairs"
+        """Iterator over sorted (local name, submodule) pairs"""
         if self._sorted_submod_items is None:
             # rebuild the cache
             self._sorted_submod_items = sorted(self._submod_dict.iteritems())
         return iter(self._sorted_submod_items)
 
-
     def contains_methods(self):
-        "Does it contain any methods?"
+        """Does it contain any methods?"""
         return bool(self._method_dict)
 
     def contains_submods(self):
-        "Does it contain any submodules?"
+        """Does it contain any submodules?"""
         return bool(self._submod_dict)
-
 
     # implementation of Mapping's abstract methods:
 
     def __iter__(self):
-        "Iterator over sorted method local names + sorted module local names"
+        """Iterator over sorted method local names + sorted module local names"""
         return (name for name, _ in self.loc_names2all())
 
     def __getitem__(self, local_name):
-        "Get RPC-submodule or method (by local name)"
+        """Get RPC-submodule or method (by local name)"""
         try:
             return self._method_dict[local_name]
         except KeyError:
             return self._submod_dict[local_name]
 
-
     # ...and other Mapping's methods:
-
     def __contains__(self, local_name):
-        "Check existence of (local) name"
+        """Check existence of (local) name"""
         return (local_name in self._method_dict
                 or local_name in self._submod_dict)
 
     def __len__(self):
         return len(self._method_dict) + len(self._submod_dict)
 
-
     # instances are hashable and will be compared by identity:
-
     __hash__ = object.__hash__
 
     def __eq__(self, other):
@@ -449,7 +433,7 @@ class RPCModule(RPCObject, Mapping):
 
 
 class RPCTree(Mapping):
-    "Maps full names (hierarchical keys) to RPC-modules and methods (values)"
+    """Maps full names (hierarchical keys) to RPC-modules and methods (values)"""
 
     NAME_CHARS = frozenset(string.ascii_letters + string.digits + '_.')
 
@@ -457,10 +441,9 @@ class RPCTree(Mapping):
     RPCMethod = RPCMethod
     RPCModule = RPCModule
 
-
     def __init__(self):
 
-        "Basic initialization"
+        """Basic initialization"""
 
         self._item_dict = {}  # maps full names to RPC-objects
         self.is_built = False
@@ -469,14 +452,13 @@ class RPCTree(Mapping):
         # callables were taken from
         self.rpc_mode = None  # 'server' or 'cli'
 
-
     def build(self,
               root_pymod=None,
               default_postinit_callable=(lambda: None),
               postinit_kwargs=None,
               rpc_mode='server'):
 
-        "Build the tree (populate it with RPC-modules/methods)"
+        """Build the tree (populate it with RPC-modules/methods)"""
 
         if self.is_built:
             raise RuntimeError("Cannot run build() method of RPCTree instance"
@@ -492,13 +474,12 @@ class RPCTree(Mapping):
                             pymods2anticipated_names=defaultdict(set))
         self.is_built = True
 
-
     def _build_subtree(self, cur_pymod, cur_full_name,
                        default_postinit_callable, postinit_kwargs,
                        ancestor_pymods, initialized_pymods,
                        pymods2anticipated_names):
 
-        "Walk through py-modules populating the tree with RPC-modules/methods"
+        """Walk through py-modules populating the tree with RPC-modules/methods"""
 
         # from cur_pymod get __rpc_methods__ -- a list of RPC-method names
         names = getattr(cur_pymod, RPC_METHOD_LIST, ())
@@ -512,20 +493,17 @@ class RPCTree(Mapping):
             raise ValueError('Illegal characters in item(s) of {0}, in {1} '
                              'module'.format(RPC_METHOD_LIST, cur_full_name))
 
-        (pymod_names2objs
-        ) = dict(inspect.getmembers(cur_pymod, inspect.ismodule))
+        pymod_names2objs = dict(inspect.getmembers(cur_pymod, inspect.ismodule))
         pymod_objs = set(pymod_names2objs.itervalues())
 
         # (the module local name might be mentioned in __rpc_methods__
         # of some higher module, in "mod1.mod2.mod3.method"-way)
-        (ant_names
-        ) = pymods2anticipated_names[(cur_pymod, cur_full_name)].union(names)
+        ant_names = pymods2anticipated_names[(cur_pymod, cur_full_name)].union(names)
         scoped_ant_names = set(name.split('.')[0] for name in ant_names)
 
         # '*' symbol means: all *public functions* (not all callable objects)
         if '*' in ant_names:
-            (func_names
-            ) = set(dict(inspect.getmembers(cur_pymod, inspect.isfunction)))
+            func_names = set(dict(inspect.getmembers(cur_pymod, inspect.isfunction)))
             try:
                 cur_pymod_public = cur_pymod.__all__
             except AttributeError:
@@ -547,16 +525,15 @@ class RPCTree(Mapping):
         postinit_callable = getattr(cur_pymod, RPC_POSTINIT, None)
 
         if ant_names or doc or postinit_callable:
-            (_full_name
-            ) = initialized_pymods.setdefault(cur_pymod, cur_full_name)
+            _full_name = initialized_pymods.setdefault(cur_pymod, cur_full_name)
             if _full_name != cur_full_name:
                 # !TODO! -- sprawdzic czy return tutaj jest ok...
                 # raise RuntimeError('Cannot create RPC-module {0} based on '
                 # 'Python-module {1!r} -- that Python-'
-                #                   'module has been already used as a base '
-                #                   'for {2} RPC-module.'.format(cur_full_name,
-                #                                                cur_pymod,
-                #                                                _full_name))
+                # 'module has been already used as a base '
+                # 'for {2} RPC-module.'.format(cur_full_name,
+                # cur_pymod,
+                # _full_name))
                 warnings.warn('Cannot create RPC-module {0} based on '
                               'Python-module {1!r} -- that Python-'
                               'module has been already used as a base '
@@ -580,12 +557,10 @@ class RPCTree(Mapping):
                 if pymod in pymod_objs:
                     rest_of_name = '.'.join(split_name[1:])
                     if cur_full_name:
-                        (mod_full_name
-                        ) = '{0}.{1}'.format(cur_full_name, mod_name)
+                        mod_full_name = '{0}.{1}'.format(cur_full_name, mod_name)
                     else:
                         mod_full_name = mod_name
-                    (pymods2anticipated_names[(pymod, mod_full_name)]
-                    ).add(rest_of_name)
+                    pymods2anticipated_names[(pymod, mod_full_name)].add(rest_of_name)
                 else:
                     raise TypeError('{0}.{1} is not a module'
                                     .format(cur_full_name, name))
@@ -632,11 +607,10 @@ class RPCTree(Mapping):
 
         ancestor_pymods.remove(cur_pymod)
 
-
     def _mod_postinit(self, postinit_callable, postinit_kwargs,
                       pymod, full_name):
 
-        "Run module post-init callable -- default or module's custom one"
+        """Run module post-init callable -- default or module's custom one"""
 
         # prepare kwargs for the particular post-init callable
         _kwargs = postinit_kwargs.copy()
@@ -647,8 +621,7 @@ class RPCTree(Mapping):
         )
         arg_names = inspect.getargspec(postinit_callable).args
         try:
-            (this_postinit_kwargs
-            ) = dict((name, _kwargs[name]) for name in arg_names)
+            this_postinit_kwargs = dict((name, _kwargs[name]) for name in arg_names)
         except KeyError as exc:
             raise KeyError("Post-init callable used for module {0} "
                            "(based on Python module {1!r}) takes "
@@ -659,11 +632,10 @@ class RPCTree(Mapping):
         # run the post-init callable
         postinit_callable(**this_postinit_kwargs)
 
-
     def add_rpc_method(self, module_full_name, method_local_name,
                        callable_obj, python_module):
 
-        "Add RPC-method"
+        """Add RPC-method"""
 
         if not callable(callable_obj):
             return
@@ -682,7 +654,6 @@ class RPCTree(Mapping):
         rpc_module.add_method(method_local_name, rpc_method)
         self._item_dict[method_full_name] = rpc_method
 
-
     def _get_rpc_mod(self, full_name, arg_name='full_name'):
 
         rpc_module = self._item_dict[full_name]
@@ -691,10 +662,9 @@ class RPCTree(Mapping):
                             "than RPCModule instance".format(arg_name))
         return rpc_module
 
-
     def get_rpc_module(self, full_name, doc=u''):
 
-        "Get RPC-module; if needed, create it and any missing ancestors of it"
+        """Get RPC-module; if needed, create it and any missing ancestors of it"""
 
         rpc_module = self._item_dict.get(full_name)
         if rpc_module is None:
@@ -731,11 +701,10 @@ class RPCTree(Mapping):
 
         return rpc_module
 
-
     def try_to_obtain(self, full_name, access_dict, access_key_patt,
                       access_keyhole_patt, required_type=None):
 
-        "Restricted access: get RPC-module/method only if key matches keyhole"
+        """Restricted access: get RPC-module/method only if key matches keyhole"""
 
         # RPC-object name must be a key in the RPC-tree
         try:
@@ -760,12 +729,11 @@ class RPCTree(Mapping):
             else:
                 raise RPCNotFoundError(exc.args[0])
 
-
     @staticmethod
     def check_access(rpc_item, access_dict, access_key_patt,
                      access_keyhole_patt, required_type=None):
 
-        "Check: * rpc_item type (if specified); * whether key matches keyhole"
+        """Check: * rpc_item type (if specified); * whether key matches keyhole"""
 
         full_name, rpc_object = rpc_item  # (name, RPC-method/module)
         rpc_object_type = type(rpc_object)  # RPCMethod or RPCModule
@@ -810,15 +778,12 @@ class RPCTree(Mapping):
         else:
             return False
 
-
     #
     # Iterators
-
     # ...over RPC-method/module names:
-
     def all_names(self, full_name='', get_relative_names=False, deep=False):
 
-        "Iterator over sorted RPC-method/submodule names"
+        """Iterator over sorted RPC-method/submodule names"""
 
         rpc_module = self._get_rpc_mod(full_name)
         if deep:
@@ -832,11 +797,10 @@ class RPCTree(Mapping):
             prefix = ('' if get_relative_names else full_name)
             return self._iter_prefixed_names(prefix,
                                              rpc_module.loc_names2all())
-
 
     def method_names(self, full_name='', get_relative_names=False, deep=False):
 
-        "Iterator over sorted RPC-method names"
+        """Iterator over sorted RPC-method names"""
 
         rpc_module = self._get_rpc_mod(full_name)
         if deep:
@@ -851,10 +815,9 @@ class RPCTree(Mapping):
             return self._iter_prefixed_names(prefix,
                                              rpc_module.loc_names2methods())
 
-
     def submod_names(self, full_name='', get_relative_names=False, deep=False):
 
-        "Iterator over sorted RPC-submodule names"
+        """Iterator over sorted RPC-submodule names"""
 
         rpc_module = self._get_rpc_mod(full_name)
         if deep:
@@ -869,12 +832,10 @@ class RPCTree(Mapping):
             return self._iter_prefixed_names(prefix,
                                              rpc_module.loc_names2submods())
 
-
     # over (<name>, <RPC-method or module object>) pairs:
-
     def all_items(self, full_name='', get_relative_names=False, deep=False):
 
-        "Iterator over (name, RPC-method/submodule) pairs (sorted by name)"
+        """Iterator over (name, RPC-method/submodule) pairs (sorted by name)"""
 
         rpc_module = self._get_rpc_mod(full_name)
         if deep:
@@ -889,10 +850,9 @@ class RPCTree(Mapping):
             return self._iter_prefixed_items(prefix,
                                              rpc_module.loc_names2all())
 
-
     def method_items(self, full_name='', get_relative_names=False, deep=False):
 
-        "Iterator over (name, RPC-method) pairs (sorted by method name)"
+        """Iterator over (name, RPC-method) pairs (sorted by method name)"""
 
         rpc_module = self._get_rpc_mod(full_name)
         if deep:
@@ -907,10 +867,9 @@ class RPCTree(Mapping):
             return self._iter_prefixed_items(prefix,
                                              rpc_module.loc_names2methods())
 
-
     def submod_items(self, full_name='', get_relative_names=False, deep=False):
 
-        "Iterator over (name, RPC-submodule) pairs (sorted by submodule name)"
+        """Iterator over (name, RPC-submodule) pairs (sorted by submodule name)"""
 
         rpc_module = self._get_rpc_mod(full_name)
         if deep:
@@ -924,7 +883,6 @@ class RPCTree(Mapping):
             prefix = ('' if get_relative_names else full_name)
             return self._iter_prefixed_items(prefix,
                                              rpc_module.loc_names2submods())
-
 
     def _iter_subtree(self, base_full_name, rpc_module,
                       get_relative_names, get_names_only,
@@ -979,7 +937,6 @@ class RPCTree(Mapping):
 
         return itertools.chain(with_this_module, with_methods, subiter)
 
-
     @staticmethod
     def _iter_prefixed_names(prefix, items):
         if prefix:
@@ -987,7 +944,6 @@ class RPCTree(Mapping):
             return (prefix + name for name, _ in items)
         else:
             return (name for name, _ in items)
-
 
     @staticmethod
     def _iter_prefixed_items(prefix, items):
@@ -997,18 +953,16 @@ class RPCTree(Mapping):
         else:
             return iter(items)
 
-
     # implementation of necessary Mapping's methods:
-
     def __iter__(self):
         return itertools.chain([''], self.all_names(deep=True))
 
     def __getitem__(self, full_name):
-        "Get RPC-module or method (by full name)"
+        """Get RPC-module or method (by full name)"""
         return self._item_dict[full_name]
 
     def __contains__(self, full_name):
-        "Check existence of (full) name"
+        """Check existence of (full) name"""
         return full_name in self._item_dict
 
     def __len__(self):
@@ -1021,7 +975,6 @@ class RPCTree(Mapping):
 
 class RPCSubTree(object):
     def build_attrs(self):
-        keys = set()
         if self.prefix:
             prefix = self.prefix + '.'
         else:
