@@ -445,7 +445,7 @@ class RPCTree(Mapping):
 
         """Basic initialization"""
 
-        self._item_dict = {}  # maps full names to RPC-objects
+        self.item_dict = {}  # maps full names to RPC-objects
         self.is_built = False
         self.method_names2pymods = {}  # maps method full names to the
         # Python modules that the method
@@ -644,18 +644,18 @@ class RPCTree(Mapping):
 
         method_full_name = '{0}.{1}'.format(module_full_name,
                                             method_local_name)
-        assert method_full_name not in self._item_dict
+        assert method_full_name not in self.item_dict
 
         rpc_module = self._get_rpc_mod(module_full_name,
                                        arg_name='module_full_name')
         rpc_method = RPCMethod(callable_obj, method_full_name)
         self.method_names2pymods[method_full_name] = python_module
         rpc_module.add_method(method_local_name, rpc_method)
-        self._item_dict[method_full_name] = rpc_method
+        self.item_dict[method_full_name] = rpc_method
 
     def _get_rpc_mod(self, full_name, arg_name='full_name'):
 
-        rpc_module = self._item_dict[full_name]
+        rpc_module = self.item_dict[full_name]
         if not isinstance(rpc_module, RPCModule):
             raise TypeError("`{0}' argument must not point to anything else "
                             "than RPCModule instance".format(arg_name))
@@ -665,7 +665,7 @@ class RPCTree(Mapping):
 
         """Get RPC-module; if needed, create it and any missing ancestors of it"""
 
-        rpc_module = self._item_dict.get(full_name)
+        rpc_module = self.item_dict.get(full_name)
         if rpc_module is None:
             if full_name.startswith('.'):
                 raise ValueError("RPC-name must not start with '.'")
@@ -690,7 +690,7 @@ class RPCTree(Mapping):
                 parent_rpc_module.add_submod(local_name, rpc_module)
 
             # add it to the tree:
-            self._item_dict[full_name] = rpc_module
+            self.item_dict[full_name] = rpc_module
         elif not isinstance(rpc_module, RPCModule):
             raise TypeError("`full_name' argument must not point "
                             "to anything else than RPCModule instance")
@@ -958,14 +958,14 @@ class RPCTree(Mapping):
 
     def __getitem__(self, full_name):
         """Get RPC-module or method (by full name)"""
-        return self._item_dict[full_name]
+        return self.item_dict[full_name]
 
     def __contains__(self, full_name):
         """Check existence of (full) name"""
-        return full_name in self._item_dict
+        return full_name in self.item_dict
 
     def __len__(self):
-        return len(self._item_dict)
+        return len(self.item_dict)
 
     # instances are not hashable:
 
@@ -978,7 +978,7 @@ class RPCSubTree(object):
             prefix = self.prefix + '.'
         else:
             prefix = ''
-        for key, method in self.rpc_tree._item_dict.iteritems():
+        for key, method in self.rpc_tree.item_dict.iteritems():
             if not callable(method):
                 continue
             if not key.startswith(prefix):
