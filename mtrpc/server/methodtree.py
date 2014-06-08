@@ -16,8 +16,6 @@ Terminology note
 
 """
 
-
-
 import abc
 import functools
 import inspect
@@ -30,8 +28,8 @@ import warnings
 import sys
 
 from collections import defaultdict, \
-                        Callable, Hashable, Mapping, \
-                        MutableSequence, MutableSet, MutableMapping
+    Callable, Hashable, Mapping, \
+    MutableSequence, MutableSet, MutableMapping
 from repr import Repr
 
 from ..common.errors import *
@@ -44,15 +42,15 @@ from ..common.const import *
 #
 
 class BadAccessPatternError(Exception):
-    "Internal exception: key or keyhole pattern contains illegal {field}"
+    """Internal exception: key or keyhole pattern contains illegal {field}"""
 
 
 class DocDecodeError(UnicodeError):
-    "Internal exception: cannot convert RPC-module/method doc to unicode"
+    """Internal exception: cannot convert RPC-module/method doc to unicode"""
 
 
 class LogWarning(UserWarning):
-    "Used to log messages using a proper logger without knowning that logger"
+    """Used to log messages using a proper logger without knowing that logger"""
 
 
 
@@ -77,7 +75,6 @@ class RPCObjectTags(dict):
 
 
 class RPCObjectHelp(object):
-
     "Abstract class: help-text generator for RPC-method/RPC-module instance"
 
     __metaclass__ = abc.ABCMeta
@@ -108,9 +105,7 @@ class RPCObjectHelp(object):
         return itertools.chain((self.help_head,), self.rest_lines)
 
 
-
 class RPCMethodHelp(RPCObjectHelp):
-
     "RPCMethod help-text generator"
 
     def _format_head(self):
@@ -126,9 +121,7 @@ class RPCMethodHelp(RPCObjectHelp):
         return u''.join(parts)
 
 
-
 class RPCModuleHelp(RPCObjectHelp):
-
     "RPCModule help-text generator"
 
     ROOT_NAME_SUBSTITTUTE_TAG = "root_name_substitute"
@@ -152,13 +145,11 @@ class RPCModuleHelp(RPCObjectHelp):
         return u''.join(parts)
 
 
-
 #
 # Container classes for RPC-methods, RPC-modules and RPC-modules/methods-tree
 #
 
 class RPCObject(object):
-
     "Abstract class: RPC-method or RPC-module"
 
     @staticmethod
@@ -189,9 +180,7 @@ class RPCObject(object):
             return u'\n'.join((first_line.strip(), textwrap.dedent(rest)))
 
 
-
 class RPCMethod(RPCObject, Callable):
-
     """Callable object wrapper with some additional attributes.
 
     When an instance is called:
@@ -325,7 +314,7 @@ class RPCMethod(RPCObject, Callable):
         real_args = [r.repr(a) for a in real_args]
 
         return inspect.formatargspec(spec_args, spec.varargs,
-            spec.keywords, real_args, formatvalue=lambda v: '='+v)
+                                     spec.keywords, real_args, formatvalue=lambda v: '=' + v)
 
     def format_result(self, result):
         r = Repr()
@@ -368,9 +357,7 @@ class RPCMethod(RPCObject, Callable):
                                         self.formatted_arg_spec))
 
 
-
 class RPCModule(RPCObject, Mapping):
-
     """RPC-module maps local names to RPC-methods and other RPC-modules
 
     Public attributes:
@@ -503,9 +490,7 @@ class RPCModule(RPCObject, Mapping):
         return self is not other
 
 
-
 class RPCTree(Mapping):
-
     "Maps full names (hierarchical keys) to RPC-modules and methods (values)"
 
     NAME_CHARS = frozenset(string.ascii_letters + string.digits + '_.')
@@ -522,8 +507,8 @@ class RPCTree(Mapping):
         self._item_dict = {}  # maps full names to RPC-objects
         self.is_built = False
         self.method_names2pymods = {}  # maps method full names to the
-                                       # Python modules that the method
-                                       # callables were taken from
+        # Python modules that the method
+        # callables were taken from
         self.rpc_mode = None  # 'server' or 'cli'
 
 
@@ -609,8 +594,8 @@ class RPCTree(Mapping):
             ) = initialized_pymods.setdefault(cur_pymod, cur_full_name)
             if _full_name != cur_full_name:
                 # !TODO! -- sprawdzic czy return tutaj jest ok...
-                #raise RuntimeError('Cannot create RPC-module {0} based on '
-                #                   'Python-module {1!r} -- that Python-'
+                # raise RuntimeError('Cannot create RPC-module {0} based on '
+                # 'Python-module {1!r} -- that Python-'
                 #                   'module has been already used as a base '
                 #                   'for {2} RPC-module.'.format(cur_full_name,
                 #                                                cur_pymod,
@@ -699,9 +684,9 @@ class RPCTree(Mapping):
         # prepare kwargs for the particular post-init callable
         _kwargs = postinit_kwargs.copy()
         _kwargs.update(
-                mod=pymod,
-                full_name=full_name,
-                rpc_tree=self,
+            mod=pymod,
+            full_name=full_name,
+            rpc_tree=self,
         )
         arg_names = inspect.getargspec(postinit_callable).args
         try:
@@ -825,7 +810,7 @@ class RPCTree(Mapping):
 
         "Check: * rpc_item type (if specified); * whether key matches keyhole"
 
-        full_name, rpc_object = rpc_item   # (name, RPC-method/module)
+        full_name, rpc_object = rpc_item  # (name, RPC-method/module)
         rpc_object_type = type(rpc_object)  # RPCMethod or RPCModule
 
         # If type is specified, the RPC-object must be an instance of it
@@ -838,14 +823,14 @@ class RPCTree(Mapping):
 
         # Creating the actual access dict...
         actual_access_dict = dict(
-                full_name=full_name,
-                local_name=split_name[-1],
-                parentmod_name='.'.join(split_name[:-1]),
-                split_name=split_name,
-                doc=rpc_object.doc,
-                tags=rpc_object.tags,
-                help=rpc_object.help.format(name=full_name),
-                type=rpc_object_type,
+            full_name=full_name,
+            local_name=split_name[-1],
+            parentmod_name='.'.join(split_name[:-1]),
+            split_name=split_name,
+            doc=rpc_object.doc,
+            tags=rpc_object.tags,
+            help=rpc_object.help.format(name=full_name),
+            type=rpc_object_type,
         )
         # ...also with fields set in RPCManager.create_access_dict()
         actual_access_dict.update(access_dict)
@@ -1023,7 +1008,7 @@ class RPCTree(Mapping):
         with_methods = ()
         if get_names_only:
             if include_this_module:
-                with_this_module = [prefix.rstrip('.')]   # (this module name)
+                with_this_module = [prefix.rstrip('.')]  # (this module name)
             if include_methods:
                 with_methods = (prefix + local_name
                                 for local_name, _
