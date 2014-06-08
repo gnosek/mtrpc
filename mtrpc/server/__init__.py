@@ -349,19 +349,14 @@ with the paths/imports-specified modules) in the following way:
    * __rpc_doc__ -- RPC-module documentation string (independent of the
      Python module documentation string);
 
-   * __rpc_tags__ -- a dictionary with arbitrary items, which becomes
-     the `tags' attribute of the RPC-module (a mapping containing any
-     additional information useful for the framework code or your code);
-
    * __rpc_postinit__ -- the RPC-module post-init-callable (see Pt 3
      below).
 
-   Only if the Python module has any of these four above-mentioned
+   Only if the Python module has any of these above-mentioned
    attributes -- is the corresponding RPC-module created and added to its
    parent RPC-module and to the RPC-tree.
 
-2. __rpc_tags__ and __rpc_doc__ are turned into the `tags' and `doc'
-   RPC-module attributes.
+2. __rpc_doc__ is turned into the `doc` RPC-module attribute.
 
 3. So called **post-init mechanism** is applied:
 
@@ -422,10 +417,6 @@ have attributes that will be used by MTRPC:
 * __doc__, i.e. the good old Python docstring -- will be turned into the
   RPC-method docstring (RPC-method `doc' attribute);
 
-* __mtrpc_tags__, a dictionary with arbitrary items -- will become the
-  `tags' attribute (a mapping containing any additional information useful
-  for the framework code or your code) of the RPC-method.
-
 **Attention:** Any strings that may be sent into the client side and that
 may contain non-ascii characters *must* be unicode strings -- in particular
 it applies to the RPC-module/method docstrings!
@@ -476,9 +467,6 @@ request) -- are:
 * "split_name" (list) -- the `full_name' split using ".",
 
 * "doc" (string) -- RPC-method/module docstring (the `doc' attribute),
-
-* "tags" (RPCObjectTags [dict subclass] instance)
-  -- the RPC-method/module `tags' attribute,
 
 * "help" (string)
   -- the RPC-method/module help-text formatted in the standard way,

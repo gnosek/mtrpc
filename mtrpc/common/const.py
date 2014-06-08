@@ -15,10 +15,6 @@ RPC-modules/methods:
   * RPC_MODULE_DOC (module attribute name) -- a name of a string
     containing documentation of a particual RPC-module;
 
-  * RPC_TAGS (module of method-callable attribute name) -- a name of
-    a dict containint module tags (arbitrary keys and values to store
-    any special properties);
-
   * RPC_POSTINIT (module attribute name) -- a name of a module postinit-
     callable (to be called after RPC-module initialization, typically to
     initialize custom module logger and globals);
@@ -55,7 +51,6 @@ RPC-modules/methods:
 # * get when the tree is being built:
 RPC_METHOD_LIST = '__rpc_methods__'
 RPC_MODULE_DOC = '__rpc_doc__'
-RPC_TAGS = '__rpc_tags__'
 RPC_POSTINIT = '__rpc_postinit__'
 # * set when the tree is being built:
 RPC_LOG = '__rpc_log__'

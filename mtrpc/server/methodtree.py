@@ -103,7 +103,6 @@ class RPCMethodHelp(RPCObjectHelp):
 class RPCModuleHelp(RPCObjectHelp):
     "RPCModule help-text generator"
 
-    ROOT_NAME_SUBSTITTUTE_TAG = "root_name_substitute"
     DEFAULT_ROOT_NAME_SUBSTITUTE = "'' [the root]"
 
     def _format_head(self):
@@ -115,8 +114,7 @@ class RPCModuleHelp(RPCObjectHelp):
         "Format as a (unicode) string"
         if name == '':
             # the root RPC-module
-            name = (self.rpc_object.tags[self.ROOT_NAME_SUBSTITTUTE_TAG]
-                    or self.DEFAULT_ROOT_NAME_SUBSTITUTE)
+            name = self.DEFAULT_ROOT_NAME_SUBSTITUTE
         parts = self._prepare_parts(name, mod_head_indent, mod_rest_indent)
         parts.insert(0, u'\n')
         if with_meth and self.rpc_object.contains_methods():
@@ -171,25 +169,15 @@ class RPCMethod(RPCObject, Callable):
 
     Public attributes:
     * doc -- RPC-method's docstring,
-    * tags -- a mapping (RPCObjectTags instance) with arbitrary content
-      (may be used to store some additional info about the method).
 
     """
-
-    SUPPRESS_MUTABLE_ARG_WARNING_TAG = 'suppress_mutable_arg_warning'
-
 
     def __init__(self, callable_obj, full_name=''):
 
         """Initialize with a callable object as the argument.
 
         Use docstring of the callable object as a base for the `doc'
-        RPC-method attribute and the callable's `<common.const.RPC_TAGS>'
-        attribute as a base for `tags' RPC-method attribute.
-
-        If default values of callable's arguments include a mutable object
-        a warning will be logged (probably; that test is not 100% reliable),
-        unless `tags' contains a key == self.SUPPRESS_MUTABLE_ARG_WARNING_TAG.
+        RPC-method attribute.
         """
 
         if not isinstance(callable_obj, Callable):
@@ -197,7 +185,6 @@ class RPCMethod(RPCObject, Callable):
         self.callable_obj = callable_obj
         self.doc = RPCObject._prepare_doc(getattr(callable_obj,
                                                   '__doc__', None))
-        self.tags = defaultdict(str, getattr(callable_obj, RPC_TAGS, {}))
         self._examine_and_prepare_arg_spec()
         self.help = RPCMethodHelp(self)
         self.full_name = full_name
@@ -218,15 +205,14 @@ class RPCMethod(RPCObject, Callable):
         # (such situation may be risky because default values are initialized
         # once, therefore they can be shared by different calls)
         # note: this check is not reliable (but still may appear to be useful)
-        if not self.tags[self.SUPPRESS_MUTABLE_ARG_WARNING_TAG]:
-            for arg_i, default in enumerate(defaults, args_defs_diff):
-                if not (self._check_arg_default(default)
-                        or spec.args[arg_i] in ACC_KWARGS):
-                    warnings.warn("Default value {0!r} of the argument {1!r} "
-                                  "of the RPC-method's callable object {2!r} "
-                                  "seens to be a mutable container"
-                                  .format(default, arg_i, self.callable_obj),
-                                  LogWarning)
+        for arg_i, default in enumerate(defaults, args_defs_diff):
+            if not (self._check_arg_default(default)
+                    or spec.args[arg_i] in ACC_KWARGS):
+                warnings.warn("Default value {0!r} of the argument {1!r} "
+                              "of the RPC-method's callable object {2!r} "
+                              "seens to be a mutable container"
+                              .format(default, arg_i, self.callable_obj),
+                              LogWarning)
 
         # format official argument specification
         # -- without special access-related arguments (ACC_KWARGS)
@@ -341,12 +327,11 @@ class RPCModule(RPCObject, Mapping):
 
     Public attributes:
     * doc -- RPC-module's docstring,
-    * tags -- a mapping (RPCObjectTags instance) with arbitrary content
       (may be used to store some additional info about module).
     """
 
-    def __init__(self, doc=u'', tags=None):
-        "Initialize; optionally with doc and/or tags"
+    def __init__(self, doc=u''):
+        "Initialize; optionally with doc"
         self._method_dict = {}  # maps RPC-method local names to RPC-methods
         self._submod_dict = {}  # maps RPC-module local names to RPC-methods
         # caches:
@@ -354,25 +339,17 @@ class RPCModule(RPCObject, Mapping):
         self._sorted_submod_items = None  # sorted (locname, RPC-module) pairs
         # public attributes:
         self.doc = doc
-        self.tags = defaultdict(str)
-        if tags:
-            self.tags.update(tags)
         self.help = RPCModuleHelp(self)
 
 
-    def declare_attrs(self, doc, tag_dict):
-        "Add doc and tags if needed, re-generate help text if needed"
+    def declare_attrs(self, doc):
+        "Add doc if needed, re-generate help text if needed"
         if doc != u'':
             if self.doc:
                 assert self.doc == doc, (self.doc, doc)
             else:
                 self.doc = doc
                 self.help = RPCModuleHelp(self)
-        if tag_dict is not None:
-            if self.tags:
-                assert self.tags == tag_dict
-            else:
-                self.tags = defaultdict(str, tag_dict)
 
 
     def add_method(self, local_name, rpc_method):
@@ -567,10 +544,9 @@ class RPCTree(Mapping):
             raise UnicodeError(exc.args[0].format(rpc_kind='RPC-module',
                                                   full_name=cur_full_name))
 
-        tag_dict = getattr(cur_pymod, RPC_TAGS, None)
         postinit_callable = getattr(cur_pymod, RPC_POSTINIT, None)
 
-        if ant_names or doc or tag_dict or postinit_callable:
+        if ant_names or doc or postinit_callable:
             (_full_name
             ) = initialized_pymods.setdefault(cur_pymod, cur_full_name)
             if _full_name != cur_full_name:
@@ -589,7 +565,7 @@ class RPCTree(Mapping):
                                                            _full_name))
                 return
             # declare (create if needed) RPC-module
-            self.get_rpc_module(cur_full_name, doc, tag_dict)
+            self.get_rpc_module(cur_full_name, doc)
             # post-init on Python module
             if postinit_callable is None:
                 postinit_callable = default_postinit_callable
@@ -716,7 +692,7 @@ class RPCTree(Mapping):
         return rpc_module
 
 
-    def get_rpc_module(self, full_name, doc=u'', tag_dict=None):
+    def get_rpc_module(self, full_name, doc=u''):
 
         "Get RPC-module; if needed, create it and any missing ancestors of it"
 
@@ -727,7 +703,7 @@ class RPCTree(Mapping):
 
             elif full_name == '':
                 # create the root module
-                rpc_module = RPCModule(doc, tag_dict)
+                rpc_module = RPCModule(doc)
 
             else:
                 split_name = full_name.split('.')
@@ -738,7 +714,7 @@ class RPCTree(Mapping):
                 parent_rpc_module = self.get_rpc_module(parent_full_name)
 
                 # create this module:
-                rpc_module = RPCModule(doc, tag_dict)
+                rpc_module = RPCModule(doc)
 
                 # add it to the parent module:
                 local_name = split_name[-1]
@@ -750,8 +726,8 @@ class RPCTree(Mapping):
             raise TypeError("`full_name' argument must not point "
                             "to anything else than RPCModule instance")
         else:
-            # update module doc and tags if needed:
-            rpc_module.declare_attrs(doc, tag_dict)
+            # update module doc if needed:
+            rpc_module.declare_attrs(doc)
 
         return rpc_module
 
@@ -809,7 +785,6 @@ class RPCTree(Mapping):
             parentmod_name='.'.join(split_name[:-1]),
             split_name=split_name,
             doc=rpc_object.doc,
-            tags=rpc_object.tags,
             help=rpc_object.help.format(name=full_name),
             type=rpc_object_type,
         )
