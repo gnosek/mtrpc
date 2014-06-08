@@ -13,7 +13,7 @@ import warnings
 import time
 from mtrpc.common import utils
 from mtrpc.common.const import DEFAULT_LOG_HANDLER_SETTINGS, RPC_METHOD_LIST
-from mtrpc.server import methodtree, threads, _daemon_recipe
+from mtrpc.server import methodtree, threads, daemonize
 from mtrpc.server.config import loader
 
 OBLIGATORY_CONFIG_SECTIONS = 'rpc_tree_init', 'amqp_params', 'bindings'
@@ -477,9 +477,9 @@ class MTRPCServerInterface(object):
 
         if (os_settings.get('daemon') or force_daemon) and not self.daemonized:
             # daemonize:
-            _daemon_recipe.UMASK = umask
-            _daemon_recipe.WORKDIR = os.getcwd()
-            _daemon_recipe.createDaemon()
+            daemonize.UMASK = umask
+            daemonize.WORKDIR = os.getcwd()
+            daemonize.createDaemon()
             self.daemonized = True
 
         # unregister old signal handlers (when restarting)

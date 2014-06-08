@@ -545,7 +545,7 @@ import pkg_resources
 
 from . import threads
 from . import methodtree
-from . import _daemon_recipe
+from . import daemonize
 from .config import loader
 from mtrpc.server.core import MTRPCServerInterface
 
