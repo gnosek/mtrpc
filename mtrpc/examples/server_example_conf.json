@@ -61,7 +61,6 @@
         "daemon": false, 
         "signal_actions": {"SIGHUP": "restart", "SIGTERM": "exit"}, 
         "sig_stopping_timeout": 30, 
-        "umask": null, 
-        "working_dir": null
+        "umask": null
     }
 }

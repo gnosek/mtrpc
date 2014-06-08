@@ -167,7 +167,6 @@ class MTRPCServerInterface(object):
         ),
         os_settings=dict(
             umask=None,
-            working_dir=None,
             daemon=False,
             signal_actions=dict(
                 SIGTERM='exit',
@@ -425,10 +424,6 @@ class MTRPCServerInterface(object):
         if umask is None:
             umask = os.umask(0)  # (os.umask() sets new, returns previous)
         os.umask(umask)
-
-        working_dir = os_settings.get('working_dir')
-        if working_dir is not None:
-            os.chdir(working_dir)
 
         if (os_settings.get('daemon') or force_daemon) and not self.daemonized:
             # daemonize:

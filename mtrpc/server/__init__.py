@@ -300,9 +300,6 @@ Server configuration file structure and content
   * "umask": None (default) or an integer -- specifies umask setting
     (None means: no changes to the present state);
 
-  * "working_dir": None (default) or a string -- working directory setting
-    (None means: no changes to the present state);
-
   * "daemon": False (default) or True -- whether the whole server process
     should be daemonized;
 
