@@ -547,6 +547,7 @@ from . import threads
 from . import methodtree
 from . import daemonize
 from .config import loader
+from mtrpc.server.amqp import AmqpServer
 from mtrpc.server.core import MTRPCServerInterface
 
 
@@ -589,7 +590,7 @@ def run_server(config_paths, daemon=False, pidfile_path=None):
                 for p in config_paths:
                     fp = config_file(p)
                     config_dict = loader.load_props(fp, config_dict)
-                server = MTRPCServerInterface.configure_and_start(
+                server = AmqpServer.configure_and_start(
                         config_dict=config_dict,
                         force_daemon=daemon,
                         final_callback=final_callback,

@@ -2,14 +2,13 @@
 
 import sys
 import threading
-import time
 import signal
 import os
 from optparse import OptionParser
+from mtrpc.server.amqp import AmqpServer
 
 sys.path.insert(0, '/usr/local/megiteam/python2.6')
 
-from mtrpc.server import MTRPCServerInterface
 from mtrpc.server.config import loader
 
 dir, name = os.path.split(sys.argv[0])
@@ -36,7 +35,7 @@ try:
     while True:
         if restart_lock.acquire(False):   # (<- non-blocking)
             config_dict = loader.load_props(open(o.config))
-            server = MTRPCServerInterface.configure_and_start(
+            server = AmqpServer.configure_and_start(
                     config_dict=config_dict,
                     force_daemon=force_daemon,
                     final_callback=final_callback,

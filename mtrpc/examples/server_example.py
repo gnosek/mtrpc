@@ -4,7 +4,7 @@ import sys
 import threading
 import time
 
-from mtrpc.server import MTRPCServerInterface
+from mtrpc.server.amqp import AmqpServer
 
 
 CONFIG_PATH = 'server_example_conf.json'
@@ -25,7 +25,7 @@ try:
     # no inner server loop needed, we have the outer one here
     while True:
         if restart_lock.acquire(False):   # (<- non-blocking)
-            server = MTRPCServerInterface.configure_and_start(
+            server = AmqpServer.configure_and_start(
                     CONFIG_PATH,
                     force_daemon=force_daemon,
                     final_callback=final_callback,

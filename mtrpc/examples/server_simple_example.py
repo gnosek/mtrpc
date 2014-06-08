@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from mtrpc.server import MTRPCServerInterface
+from mtrpc.server.amqp import AmqpServer
 import signal
 
 # configure and start the server -- then wait for KeyboardInterrupt
@@ -11,9 +11,9 @@ server = None
 try:
     # no inner server loop needed, we have the outer one here
     while True:
-        server = MTRPCServerInterface.configure_and_start(
+        server = AmqpServer.configure_and_start(
                 config_path='server_simple_example_conf.json',
-                final_callback=MTRPCServerInterface.restart_on,
+                final_callback=AmqpServer.restart_on,
         )
         signal.pause()
 except KeyboardInterrupt:
