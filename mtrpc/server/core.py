@@ -16,63 +16,6 @@ from mtrpc.common.const import DEFAULT_LOG_HANDLER_SETTINGS, RPC_METHOD_LIST
 from mtrpc.server import methodtree, threads, daemonize
 from mtrpc.server.config import loader
 
-OBLIGATORY_CONFIG_SECTIONS = 'rpc_tree_init', 'amqp_params', 'bindings'
-CONFIG_SECTION_TYPES = dict(
-    rpc_tree_init=dict,
-    amqp_params=dict,
-    exchange_types=dict,
-    bindings=list,
-    manager_settings=dict,  # !TODO! - inaczej...
-    manager_attributes=dict,
-    responder_attributes=dict,
-    logging_settings=dict,
-    os_settings=dict,
-)
-# allowed sections of a config file and their default content
-CONFIG_SECTION_FIELDS = dict(
-    rpc_tree_init=dict(
-        paths=[],
-        imports=['mtrpc.server.sysmethods as system'],
-        postinit_kwargs=dict(
-            logging_settings=dict(
-                mod_logger_pattern='mtrpc.server.rpc_log.{full_name}',
-                level='warning',
-                handlers=[DEFAULT_LOG_HANDLER_SETTINGS],
-                propagate=False,
-                custom_mod_loggers=dict(
-                    # maps RPC-module full names to logging settings dicts
-                    # with 'mod_logger' key pointing at a logger name;
-                    # omitted items will be substituted with general ones
-                ),
-            ),
-            mod_globals=dict(
-                # maps RPC-module full names to dicts of attributes
-            ),
-        ),
-    ),
-    amqp_params=None,  # to be a dict with some keys...
-    exchange_types=None,  # to be a dict: {exchange, its type}
-    bindings=None,  # to be a list of binding props
-    manager_settings=None,  # to be a dict with some keys... !TODO! - inaczej...
-    manager_attributes=None,  # to be a dict with some keys...
-    responder_attributes=None,  # to be a dict with some keys...
-    logging_settings=dict(
-        server_logger='mtrpc.server',
-        level='info',
-        handlers=[DEFAULT_LOG_HANDLER_SETTINGS],
-        propagate=False
-    ),
-    os_settings=dict(
-        umask=None,
-        working_dir=None,
-        daemon=False,
-        signal_actions=dict(
-            SIGTERM='exit',
-            SIGHUP='restart',
-        ),
-        sig_stopping_timeout=60,
-    ),
-)
 
 
 class MTRPCServerInterface(object):
@@ -191,6 +134,64 @@ class MTRPCServerInterface(object):
     responder constructors when server is started.
 
     """
+
+    OBLIGATORY_CONFIG_SECTIONS = 'rpc_tree_init', 'amqp_params', 'bindings'
+    CONFIG_SECTION_TYPES = dict(
+        rpc_tree_init=dict,
+        amqp_params=dict,
+        exchange_types=dict,
+        bindings=list,
+        manager_settings=dict,  # !TODO! - inaczej...
+        manager_attributes=dict,
+        responder_attributes=dict,
+        logging_settings=dict,
+        os_settings=dict,
+        )
+    # allowed sections of a config file and their default content
+    CONFIG_SECTION_FIELDS = dict(
+        rpc_tree_init=dict(
+            paths=[],
+            imports=['mtrpc.server.sysmethods as system'],
+            postinit_kwargs=dict(
+                logging_settings=dict(
+                    mod_logger_pattern='mtrpc.server.rpc_log.{full_name}',
+                    level='warning',
+                    handlers=[DEFAULT_LOG_HANDLER_SETTINGS],
+                    propagate=False,
+                    custom_mod_loggers=dict(
+                        # maps RPC-module full names to logging settings dicts
+                        # with 'mod_logger' key pointing at a logger name;
+                        # omitted items will be substituted with general ones
+                    ),
+                    ),
+                mod_globals=dict(
+                    # maps RPC-module full names to dicts of attributes
+                ),
+                ),
+            ),
+        amqp_params=None,  # to be a dict with some keys...
+        exchange_types=None,  # to be a dict: {exchange, its type}
+        bindings=None,  # to be a list of binding props
+        manager_settings=None,  # to be a dict with some keys... !TODO! - inaczej...
+        manager_attributes=None,  # to be a dict with some keys...
+        responder_attributes=None,  # to be a dict with some keys...
+        logging_settings=dict(
+            server_logger='mtrpc.server',
+            level='info',
+            handlers=[DEFAULT_LOG_HANDLER_SETTINGS],
+            propagate=False
+        ),
+        os_settings=dict(
+            umask=None,
+            working_dir=None,
+            daemon=False,
+            signal_actions=dict(
+                SIGTERM='exit',
+                SIGHUP='restart',
+                ),
+            sig_stopping_timeout=60,
+            ),
+        )
 
     _instance = None
     _server_iface_rlock = threading.RLock()
@@ -348,8 +349,8 @@ class MTRPCServerInterface(object):
         return config
 
 
-    @staticmethod
-    def validate_and_complete_config(config):
+    @classmethod
+    def validate_and_complete_config(cls, config):
 
         """Check and supplement a given config dict.
 
@@ -367,24 +368,24 @@ class MTRPCServerInterface(object):
 
         # verify section content types
         for section, sect_content in config.iteritems():
-            if not isinstance(sect_content, CONFIG_SECTION_TYPES[section]):
+            if not isinstance(sect_content, cls.CONFIG_SECTION_TYPES[section]):
                 raise TypeError('{0} section should be a {1.__name__}'
                                 .format(section,
-                                        CONFIG_SECTION_TYPES[section]))
+                                        cls.CONFIG_SECTION_TYPES[section]))
 
         # verify completeness
-        omitted = set(OBLIGATORY_CONFIG_SECTIONS).difference(config)
+        omitted = set(cls.OBLIGATORY_CONFIG_SECTIONS).difference(config)
         if omitted:
             raise ValueError('Section(s): {0} -- should not be omitted'
                              .format(', '.join(sorted(omitted))))
 
         # complement omited non-obligatory sections
-        for section in set(CONFIG_SECTION_TYPES
-        ).difference(OBLIGATORY_CONFIG_SECTIONS):
-            config.setdefault(section, CONFIG_SECTION_TYPES[section]())
+        for section in set(cls.CONFIG_SECTION_TYPES
+        ).difference(cls.OBLIGATORY_CONFIG_SECTIONS):
+            config.setdefault(section, cls.CONFIG_SECTION_TYPES[section]())
 
         # verify section fields and complement them with default values
-        for section, sect_content in CONFIG_SECTION_FIELDS.iteritems():
+        for section, sect_content in cls.CONFIG_SECTION_FIELDS.iteritems():
             if sect_content is not None:
                 # verify (check for illegal fields)
                 used_fields = set(config[section])
