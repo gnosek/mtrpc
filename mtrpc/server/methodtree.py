@@ -31,8 +31,9 @@ from collections import defaultdict, \
     MutableSequence, MutableSet, MutableMapping
 from repr import Repr
 
-from ..common.errors import *
-from ..common.const import *
+from mtrpc.common.const import ACC_KWARGS, ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, ACCESS_KEYHOLE_KWARG, RPC_METHOD_LIST, \
+    RPC_POSTINIT, RPC_MODULE_DOC
+from mtrpc.common.errors import RPCMethodArgError, RPCNotFoundError
 
 
 #
