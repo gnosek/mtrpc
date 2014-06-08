@@ -16,7 +16,6 @@ Terminology note
 
 """
 
-import abc
 import functools
 import inspect
 import itertools
@@ -51,73 +50,31 @@ class LogWarning(UserWarning):
     """Used to log messages using a proper logger without knowing that logger"""
 
 
-class RPCObjectHelp(object):
-    """Abstract class: help-text generator for RPC-method/RPC-module instance"""
+def format_help(head, body, body_indent):
+    body_lines = prepare_doc(body).splitlines()
 
-    __metaclass__ = abc.ABCMeta
-
-    def __init__(self, rpc_object):
-        self.rpc_object = rpc_object
-        self.head = self._format_head()
-        self.rest_lines = rpc_object.doc.splitlines(True)  # (True => keep \n)
-
-    @abc.abstractmethod
-    def _format_head(self):
-        """Format the head line"""
-
-    @abc.abstractmethod
-    def format(self):
-        """Format as a (unicode) string"""
-
-    def _prepare_parts(self, name, head_indent, rest_indent):
-        if self.rest_lines:
-            return [head_indent, self.head.format(name=name), u'\n',
-                    rest_indent, u'\n', rest_indent,
-                    rest_indent.join(self.rest_lines), u'\n']
-        else:
-            return [head_indent, self.head.format(name=name), u'\n']
-
-    def __iter__(self):
-        """Iterate over all help lines"""
-        return itertools.chain((self.help_head,), self.rest_lines)
+    yield head
+    if body_lines:
+        yield body_indent
+        for line in body_lines:
+            yield body_indent + line
+        yield body_indent
+    yield ''
 
 
-class RPCMethodHelp(RPCObjectHelp):
-    """RPCMethod help-text generator"""
-
-    def _format_head(self):
-        argspec = self.rpc_object.formatted_arg_spec
-        argspec = argspec.replace('{', '{{').replace('}', '}}')
-        return u'{{name}}{0}'.format(argspec)
-
-    def format(self, name, with_meth='[blah]',
-               meth_head_indent=(4 * u' ' + u'* '), mod_head_indent='[blah]',
-               meth_rest_indent=(8 * u' '), mod_rest_indent='[blah]'):
-        """Format as a (unicode) string"""
-        parts = self._prepare_parts(name, meth_head_indent, meth_rest_indent)
-        return u''.join(parts)
+def format_method_help(full_name, callable_obj):
+    doc = getattr(callable_obj, '__doc__', u'')
+    argspec = get_effective_signature(callable_obj)
+    head = u'    * {full_name}{argspec}\n'.format(full_name=full_name, argspec=argspec)
+    return '\n'.join(format_help(head, doc, u'        '))
 
 
-class RPCModuleHelp(RPCObjectHelp):
-    """RPCModule help-text generator"""
+def format_module_help(full_name, module_doc):
+    if not full_name:
+        full_name = u'[root]'
 
-    DEFAULT_ROOT_NAME_SUBSTITUTE = "'' [the root]"
-
-    def _format_head(self):
-        return u'{name}'  # [sic]
-
-    def format(self, name, with_meth=True,
-               meth_head_indent='[blah]', mod_head_indent=(u'Module: '),
-               meth_rest_indent='[blah]', mod_rest_indent=(4 * u' ')):
-        """Format as a (unicode) string"""
-        if name == '':
-            # the root RPC-module
-            name = self.DEFAULT_ROOT_NAME_SUBSTITUTE
-        parts = self._prepare_parts(name, mod_head_indent, mod_rest_indent)
-        parts.insert(0, u'\n')
-        if with_meth and self.rpc_object.contains_methods():
-            parts.extend([u'\n', mod_rest_indent, u'Methods:', u'\n'])
-        return u''.join(parts)
+    head = u'Module: {0}\n'.format(full_name)
+    return '\n'.join(format_help(head, module_doc, u'    '))
 
 
 #
@@ -162,6 +119,43 @@ def format_result(result):
     return r.repr(result)
 
 
+def get_effective_signature(obj):
+    spec = inspect.getargspec(obj)
+    defaults = spec.defaults or ()
+    # difference between number of args and number of defined default vals
+    args_defs_diff = len(spec.args) - len(defaults)
+    # warn about default arg values that are mutable
+    # (such situation may be risky because default values are initialized
+    # once, therefore they can be shared by different calls)
+    # note: this check is not reliable (but still may appear to be useful)
+    for arg_i, default in enumerate(defaults, args_defs_diff):
+        if not (is_immutable(default) or spec.args[arg_i] in ACC_KWARGS):
+            warnings.warn("Default value {0!r} of the argument {1!r} "
+                          "of the RPC-method's callable object {2!r} "
+                          "seems to be a mutable container"
+                          .format(default, arg_i, obj),
+                          LogWarning)
+
+    # format official argument specification
+    # -- without special access-related arguments (ACC_KWARGS)
+    official_args, official_defaults = [], []
+    last_acc_kwarg = None
+    for def_i, arg in enumerate(spec.args, -args_defs_diff):
+        if arg in ACC_KWARGS:
+            last_acc_kwarg = arg
+        elif last_acc_kwarg:
+            TypeError("Bad argument specification of {0!r}: special "
+                      "access-related arguments (such as {1!r}) must be "
+                      "placed *after* any other arguments (such as {2!r})"
+                      .format(obj, last_acc_kwarg, arg))
+        else:
+            official_args.append(arg)
+            if def_i >= 0:
+                official_defaults.append(defaults[def_i])
+    official_defaults = tuple(official_defaults) or None
+    return inspect.formatargspec(official_args, spec.varargs, spec.keywords, official_defaults)
+
+
 class RPCMethod(RPCObject, Callable):
     """Callable object wrapper with some additional attributes.
 
@@ -171,10 +165,6 @@ class RPCMethod(RPCObject, Callable):
     2) there is a check whether given arguments match the argument
        specification of the callable -- if not, RPCMethodArgError is thrown;
     3) the callable is called, the result is returned.
-
-    Public attributes:
-    * doc -- RPC-method's docstring,
-
     """
 
     def __init__(self, callable_obj, full_name=''):
@@ -188,77 +178,27 @@ class RPCMethod(RPCObject, Callable):
         if not isinstance(callable_obj, Callable):
             raise TypeError('Method object must be callable')
         self.callable_obj = callable_obj
-        self.doc = prepare_doc(getattr(callable_obj, '__doc__', None))
-        self._examine_and_prepare_arg_spec()
-        self.help = RPCMethodHelp(self)
+        spec = inspect.getargspec(self.callable_obj)
+        self.formatted_arg_spec = get_effective_signature(self.callable_obj)
+        self._test_argspec(spec)
         self.full_name = full_name
-        self.__doc__ = self.help.format(full_name)
+        self.__doc__ = format_method_help(full_name, callable_obj)
         try:
             self.module = sys.modules[callable_obj.__module__]
         except (AttributeError, KeyError):
             self.module = None
 
-    def _examine_and_prepare_arg_spec(self):
-        spec = inspect.getargspec(self.callable_obj)
-        defaults = spec.defaults or ()
-
-        # difference between number of args and number of defined default vals
-        args_defs_diff = len(spec.args) - len(defaults)
-
-        # warn about default arg values that are mutable
-        # (such situation may be risky because default values are initialized
-        # once, therefore they can be shared by different calls)
-        # note: this check is not reliable (but still may appear to be useful)
-        for arg_i, default in enumerate(defaults, args_defs_diff):
-            if not (self._check_arg_default(default)
-                    or spec.args[arg_i] in ACC_KWARGS):
-                warnings.warn("Default value {0!r} of the argument {1!r} "
-                              "of the RPC-method's callable object {2!r} "
-                              "seens to be a mutable container"
-                              .format(default, arg_i, self.callable_obj),
-                              LogWarning)
-
-        # format official argument specification
-        # -- without special access-related arguments (ACC_KWARGS)
-        official_args, official_defaults = [], []
-        last_acc_kwarg = None
-        for def_i, arg in enumerate(spec.args, -args_defs_diff):
-            if arg in ACC_KWARGS:
-                last_acc_kwarg = arg
-            elif last_acc_kwarg:
-                TypeError("Bad argument specification of {0!r}: special "
-                          "access-related arguments (such as {1!r}) must be "
-                          "placed *after* any other arguments (such as {2!r})"
-                          .format(self.callable_obj, last_acc_kwarg, arg))
-            else:
-                official_args.append(arg)
-                if def_i >= 0:
-                    official_defaults.append(defaults[def_i])
-        official_defaults = tuple(official_defaults) or None
-        self.formatted_arg_spec = inspect.formatargspec(official_args,
-                                                        spec.varargs,
-                                                        spec.keywords,
-                                                        official_defaults)
-
+    def _test_argspec(self, spec):
         # set attrs informing about special access-related arguments
         self._gets_access_dict = ACCESS_DICT_KWARG in spec.args
         self._gets_access_key = ACCESS_KEY_KWARG in spec.args
         self._gets_access_keyhole = ACCESS_KEYHOLE_KWARG in spec.args
-
         # create argument testing callable object:
         _arg_test_callable_str = ('def _arg_test_callable{0}: pass'
                                   .format(inspect.formatargspec(*spec)))
         _temp_namespace = {}
         exec _arg_test_callable_str in _temp_namespace
         self._arg_test_callable = _temp_namespace['_arg_test_callable']
-
-    @staticmethod
-    def _check_arg_default(arg):
-        """Try to check if default val is immutable (test isn't 100%-reliable!)"""
-        return (isinstance(arg, Hashable)
-                and not isinstance(arg, (MutableSequence,
-                                         MutableSet,
-                                         MutableMapping)))
 
     def format_args(self, args, kw):
         """Format arguments in a way suitable for logging"""
@@ -318,15 +258,18 @@ class RPCMethod(RPCObject, Callable):
                                         self.formatted_arg_spec))
 
 
+def is_immutable(arg):
+    """Try to check if default val is immutable (test isn't 100%-reliable!)"""
+    return (isinstance(arg, Hashable)
+            and not isinstance(arg, (MutableSequence,
+                                     MutableSet,
+                                     MutableMapping)))
+
+
 class RPCModule(RPCObject, Mapping):
-    """RPC-module maps local names to RPC-methods and other RPC-modules
+    """RPC-module maps local names to RPC-methods and other RPC-modules"""
 
-    Public attributes:
-    * doc -- RPC-module's docstring,
-      (may be used to store some additional info about module).
-    """
-
-    def __init__(self, doc=u''):
+    def __init__(self, full_name, doc=u''):
         """Initialize; optionally with doc"""
         self._method_dict = {}  # maps RPC-method local names to RPC-methods
         self._submod_dict = {}  # maps RPC-module local names to RPC-methods
@@ -334,17 +277,12 @@ class RPCModule(RPCObject, Mapping):
         self._sorted_method_items = None  # sorted (locname, RPC-method) pairs
         self._sorted_submod_items = None  # sorted (locname, RPC-module) pairs
         # public attributes:
-        self.doc = doc
-        self.help = RPCModuleHelp(self)
+        self.full_name = full_name
+        self.__doc__ = format_module_help(full_name, doc)
 
     def declare_attrs(self, doc):
         """Add doc if needed, re-generate help text if needed"""
-        if doc != u'':
-            if self.doc:
-                assert self.doc == doc, (self.doc, doc)
-            else:
-                self.doc = doc
-                self.help = RPCModuleHelp(self)
+        self.__doc__ = format_module_help(self.full_name, doc)
 
     def add_method(self, local_name, rpc_method):
         """Add a new method"""
@@ -672,7 +610,7 @@ class RPCTree(Mapping):
 
             elif full_name == '':
                 # create the root module
-                rpc_module = RPCModule(doc)
+                rpc_module = RPCModule(full_name, doc)
 
             else:
                 split_name = full_name.split('.')
@@ -683,7 +621,7 @@ class RPCTree(Mapping):
                 parent_rpc_module = self.get_rpc_module(parent_full_name)
 
                 # create this module:
-                rpc_module = RPCModule(doc)
+                rpc_module = RPCModule(full_name, doc)
 
                 # add it to the parent module:
                 local_name = split_name[-1]
@@ -751,7 +689,6 @@ class RPCTree(Mapping):
             local_name=split_name[-1],
             parentmod_name='.'.join(split_name[:-1]),
             split_name=split_name,
-            doc=rpc_object.doc,
             type=rpc_object_type,
         )
         # ...also with fields set in RPCManager.create_access_dict()

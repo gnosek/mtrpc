@@ -152,15 +152,13 @@ def _iter_help_texts(name, deep,
                                      
     if isinstance(rpc_obj, rpc_tree.RPCMethod):
         # 1-element iterator with the help-text of the given method
-        return iter([rpc_obj.help.format(name=name,
-                                         meth_head_indent=(u'\nMethod: '),
-                                         meth_rest_indent=(4 * u' '))])
+        return iter([rpc_obj.__doc__])
     else:
         subitems = _iter_mod_subitems(name, deep,
                                       _access_dict,
                                       _access_key_patt,
                                       _access_keyhole_patt)
-        return (obj.help.format(name=n)
+        return (obj.__doc__
                 for n, obj in itertools.chain([(name, rpc_obj)], subitems))
 
 
