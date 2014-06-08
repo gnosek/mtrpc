@@ -111,7 +111,7 @@ def configure_logging(log, prev_log, log_handlers, log_config):
         level = handler_props.get('level', default_hprops['level']).upper()
         format = handler_props.get('format', default_hprops['format'])
 
-        handler = HandlerClass(**kwargs_to_str(kwargs))
+        handler = HandlerClass(**kwargs)
         handler.setLevel(getattr(logging, level))
         handler.setFormatter(logging.Formatter(format))
 
@@ -120,11 +120,6 @@ def configure_logging(log, prev_log, log_handlers, log_config):
 
     log.debug('Logger %s configured', log.name)
 
-
-# to overcome a problem fixed in Python 2.6.5; see Python issue tracker: #4978
-def kwargs_to_str(kwargs):
-    """Create a new dict from a dict, replacung unicode-keys with str-keys"""
-    return dict((str(key), value) for key, value in kwargs.iteritems())
 
 def setkeepalives(sck, enabled=True, keepcnt=5, keepintvl=120, keepidle=300):
     if enabled:

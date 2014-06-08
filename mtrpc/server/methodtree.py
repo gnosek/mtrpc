@@ -336,8 +336,6 @@ class RPCMethod(RPCObject, Callable):
     def __call__(self, *args, **kwargs):
         "Call the method"
 
-        kwargs = utils.kwargs_to_str(kwargs)
-
         if not self._gets_access_dict:
             kwargs.pop(ACCESS_DICT_KWARG, None)
 

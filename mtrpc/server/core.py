@@ -397,14 +397,6 @@ class MTRPCServerInterface(object):
                 content.update(config[section])
                 config[section] = content
 
-        # replace unicode-keys with str-keys in kwargs-based sections
-        (config['amqp_params']
-        ) = utils.kwargs_to_str(config['amqp_params'])
-        (config['manager_attributes']
-        ) = utils.kwargs_to_str(config['manager_attributes'])
-        (config['responder_attributes']
-        ) = utils.kwargs_to_str(config['responder_attributes'])
-
         # verify RPC-tree-init-related settings
         for field, value in config['rpc_tree_init'].iteritems():
             if not (field in ('paths', 'imports') and isinstance(value, list)

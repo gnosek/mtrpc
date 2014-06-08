@@ -1215,7 +1215,7 @@ class RPCTaskThread(threading.Thread):
 
         try:
             message_data.setdefault('kwparams', {})
-            request = RPCRequest(**utils.kwargs_to_str(message_data))
+            request = RPCRequest(**message_data)
 
             # for security reasons: strict type tests, not isinstance()-based
             if not (type(request.method) is str

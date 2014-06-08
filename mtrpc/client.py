@@ -338,7 +338,7 @@ class MTRPCProxy(object):
     def _store_response(self, msg):
         try:
             response_dict = encoding.loads(msg.body)
-            self._response = Response(**utils.kwargs_to_str(response_dict))
+            self._response = Response(**response_dict)
         except Exception:
             raise errors.RPCClientError('Could not deserialize message: {0!r}\n{1}'
                                  .format(msg.body, traceback.format_exc()))
