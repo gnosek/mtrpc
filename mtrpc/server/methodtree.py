@@ -752,7 +752,6 @@ class RPCTree(Mapping):
             parentmod_name='.'.join(split_name[:-1]),
             split_name=split_name,
             doc=rpc_object.doc,
-            help=rpc_object.help.format(name=full_name),
             type=rpc_object_type,
         )
         # ...also with fields set in RPCManager.create_access_dict()
