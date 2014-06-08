@@ -36,7 +36,6 @@ from repr import Repr
 
 from ..common.errors import *
 from ..common.const import *
-from ..common import utils
 
 
 
