@@ -1,5 +1,6 @@
 import time
-from mtrpc.server import MTRPCServerInterface, threads
+from mtrpc.server.core import MTRPCServerInterface
+from mtrpc.server import threads
 
 
 class AmqpServer(MTRPCServerInterface):

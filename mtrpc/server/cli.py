@@ -2,7 +2,8 @@ import readline
 import rlcompleter
 import code
 
-from mtrpc.server import MTRPCServerInterface, methodtree
+from mtrpc.server.core import MTRPCServerInterface
+from mtrpc.server import methodtree
 
 
 class MtrpcCli(MTRPCServerInterface):
