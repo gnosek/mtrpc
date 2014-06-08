@@ -1,3 +1,5 @@
+import Queue
+import threading
 import time
 from mtrpc.server.core import MTRPCServerInterface
 from mtrpc.server import threads
@@ -25,6 +27,13 @@ class AmqpServer(MTRPCServerInterface):
         responder_attributes=None,  # to be a dict with some keys...
     )
     RPC_MODE = 'server'
+
+    def __init__(self):
+        self.manager = None
+        self.responder = None
+        self.task_dict = {}
+        self.result_fifo = Queue.Queue()
+        self.mutex = threading.Lock()
 
     def start(self, final_callback=None):
 
@@ -72,3 +81,45 @@ class AmqpServer(MTRPCServerInterface):
             self.manager.start()
 
         return self.manager
+
+    def stop(self, reason='manual stop', loglevel='info', force=False,
+             timeout=30):
+
+        """Request the manager to stop the responder and then to stop itself.
+
+        Arguments:
+
+        * reason (str) -- an arbitrary message (to be recorded in the log);
+
+        * loglevel (str) -- one of: 'debug', 'info', 'warning', 'error',
+          'critical';
+
+        * force (bool) -- if true the server responder will not wait for
+                          remaining tasks to be completed;
+
+        * timeout (int or None)
+          -- timeout=None  => wait until the manager thread terminates,
+          -- timeout=<i>   => wait, but no longer than <i> seconds,
+          -- timeout=0     => don't wait, return immediately.
+
+        Return True if the manager thread has been stopped successfully
+        (then set the `manager' attribute to None); False if it's still
+        alive.
+
+        """
+
+        with self._server_iface_rlock:
+            if self.manager is None or not self.manager.is_alive():
+                self.log.warning("Futile attempt to stop the server "
+                                 "while it's not started")
+                return True
+
+        self.log.info('Stopping the server (reason: "%s")...', reason)
+        stopped = self.manager.stop(reason, loglevel, force, timeout)
+        if stopped:
+            self.manager = None
+        else:
+            self.log.warning('Server stop has been requested but the '
+                             'server is not stopped (yet?)')
+
+        return stopped

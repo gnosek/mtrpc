@@ -16,3 +16,6 @@ class MtrpcCli(MTRPCServerInterface):
         readline.parse_and_bind("tab:complete")
 
         code.interact(local=params)
+
+    def stop(self, reason='manual stop', loglevel='info', force=False, timeout=30):
+        pass
