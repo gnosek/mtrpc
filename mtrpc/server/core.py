@@ -697,27 +697,3 @@ class MTRPCServerInterface(object):
                              'server is not stopped (yet?)')
 
         return stopped
-
-
-    #
-    # Additional public static/class methods useful
-    # when you prepare your own config file
-
-    @staticmethod
-    def make_config_stub():
-        "Create a dict contaning (empty) obligatory config sections"
-        return dict((section, CONFIG_SECTION_TYPES[section]())
-                    for section in OBLIGATORY_CONFIG_SECTIONS)
-
-
-    @classmethod
-    def write_config_skeleton(cls, dest_path, config_stub=None):
-        "Write config skeleton into file (you'll adjust that file by hand)"
-        if config_stub is None:
-            config_stub = cls.make_config_stub()
-        config = cls.validate_and_complete_config(config_stub)
-        with open(dest_path, 'w') as dest_file:
-            json.dump(config, dest_file, sort_keys=True, indent=4)
-
-
-
