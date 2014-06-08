@@ -78,14 +78,6 @@ def format_module_help(full_name, module_doc):
     return '\n'.join(format_help(head, module_doc, u'    '))
 
 
-#
-# Container classes for RPC-methods, RPC-modules and RPC-modules/methods-tree
-#
-
-class RPCObject(object):
-    """Abstract class: RPC-method or RPC-module"""
-
-
 def prepare_doc(doc):
     """Prepare RPC-object doc (assert that it's Unicode, trim it etc.)"""
 
@@ -157,7 +149,7 @@ def get_effective_signature(obj):
     return inspect.formatargspec(official_args, spec.varargs, spec.keywords, official_defaults)
 
 
-class RPCMethod(RPCObject, Callable):
+class RPCMethod(Callable):
     """Callable object wrapper with some additional attributes.
 
     When an instance is called:
@@ -267,7 +259,7 @@ def is_immutable(arg):
                                      MutableMapping)))
 
 
-class RPCModule(RPCObject, Mapping):
+class RPCModule(Mapping):
     """RPC-module maps local names to RPC-methods and other RPC-modules"""
 
     def __init__(self, full_name, doc=u''):
@@ -376,7 +368,6 @@ class RPCTree(Mapping):
 
     NAME_CHARS = frozenset(string.ascii_letters + string.digits + '_.')
 
-    RPCObject = RPCObject
     RPCMethod = RPCMethod
     RPCModule = RPCModule
 
