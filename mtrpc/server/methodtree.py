@@ -19,6 +19,7 @@ Terminology note
 
 
 import abc
+import functools
 import inspect
 import itertools
 import re
@@ -1095,7 +1096,13 @@ class RPCSubTree(object):
                 k, tail = k.split('.', 1)
                 setattr(self, k, RPCSubTree(self.rpc_tree, k))
             else:
-                setattr(self, k, method)
+                access_kwargs = {
+                    ACCESS_DICT_KWARG: {},
+                    ACCESS_KEY_KWARG: '',
+                    ACCESS_KEYHOLE_KWARG: '',
+                }
+                method_with_acc = functools.partial(method, **access_kwargs)
+                setattr(self, k, method_with_acc)
 
     def __init__(self, rpc_tree, prefix=''):
         self.prefix = prefix
