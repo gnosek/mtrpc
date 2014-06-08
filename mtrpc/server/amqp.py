@@ -7,7 +7,7 @@ from mtrpc.server import threads
 
 class AmqpServer(MTRPCServerInterface):
 
-    OBLIGATORY_CONFIG_SECTIONS = MTRPCServerInterface.OBLIGATORY_CONFIG_SECTIONS + ('amqp_params', 'bindings')
+    OBLIGATORY_CONFIG_SECTIONS = ('amqp_params', 'bindings')
     CONFIG_SECTION_TYPES = dict(
         MTRPCServerInterface.CONFIG_SECTION_TYPES,
         amqp_params=dict,
@@ -34,6 +34,17 @@ class AmqpServer(MTRPCServerInterface):
         self.task_dict = {}
         self.result_fifo = Queue.Queue()
         self.mutex = threading.Lock()
+
+    @classmethod
+    def validate_and_complete_config(cls, config):
+
+        # verify completeness
+        omitted = set(cls.OBLIGATORY_CONFIG_SECTIONS).difference(config)
+        if omitted:
+            raise ValueError('Section(s): {0} -- should not be omitted'
+                             .format(', '.join(sorted(omitted))))
+
+        return super(AmqpServer, cls).validate_and_complete_config(config)
 
     def start(self, final_callback=None):
 

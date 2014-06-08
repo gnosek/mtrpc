@@ -130,7 +130,6 @@ class MTRPCServerInterface(object):
 
     """
 
-    OBLIGATORY_CONFIG_SECTIONS = 'rpc_tree_init',
     CONFIG_SECTION_TYPES = dict(
         rpc_tree_init=dict,
         logging_settings=dict,
@@ -326,16 +325,9 @@ class MTRPCServerInterface(object):
                                 .format(section,
                                         cls.CONFIG_SECTION_TYPES[section]))
 
-        # verify completeness
-        omitted = set(cls.OBLIGATORY_CONFIG_SECTIONS).difference(config)
-        if omitted:
-            raise ValueError('Section(s): {0} -- should not be omitted'
-                             .format(', '.join(sorted(omitted))))
-
         # complement omited non-obligatory sections
-        for section in set(cls.CONFIG_SECTION_TYPES
-        ).difference(cls.OBLIGATORY_CONFIG_SECTIONS):
-            config.setdefault(section, cls.CONFIG_SECTION_TYPES[section]())
+        for section, section_type in cls.CONFIG_SECTION_TYPES.iteritems():
+            config.setdefault(section, section_type())
 
         # verify section fields and complement them with default values
         for section, sect_content in cls.CONFIG_SECTION_FIELDS.iteritems():
