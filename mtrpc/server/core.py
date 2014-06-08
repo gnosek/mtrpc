@@ -136,7 +136,7 @@ class MTRPCServerInterface(object):
         rpc_tree_init=dict,
         logging_settings=dict,
         os_settings=dict,
-        )
+    )
     # allowed sections of a config file and their default content
     CONFIG_SECTION_FIELDS = dict(
         rpc_tree_init=dict(
@@ -153,12 +153,12 @@ class MTRPCServerInterface(object):
                         # with 'mod_logger' key pointing at a logger name;
                         # omitted items will be substituted with general ones
                     ),
-                    ),
+                ),
                 mod_globals=dict(
                     # maps RPC-module full names to dicts of attributes
                 ),
-                ),
             ),
+        ),
         logging_settings=dict(
             server_logger='mtrpc.server',
             level='info',
@@ -171,7 +171,7 @@ class MTRPCServerInterface(object):
             signal_actions=dict(
                 SIGTERM='exit',
                 SIGHUP='restart',
-                ),
+            ),
             sig_stopping_timeout=60,
         ),
     )
