@@ -120,14 +120,11 @@ Responder (publisher) queue name:
 import abc
 import functools
 import hashlib
-import itertools
 import logging
 import os
 import select
-import sys
 import threading
 import time
-import traceback
 from collections import namedtuple
 
 from amqplib import client_0_8 as amqp
