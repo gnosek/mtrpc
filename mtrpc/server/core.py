@@ -413,12 +413,11 @@ class MTRPCServerInterface(object):
         return self.log
 
 
-    def do_os_settings(self, os_settings=None, force_daemon=False):
+    def do_os_settings(self, force_daemon=False):
 
         "Set umask and working dir; daemonize or not; set OS signal handlers"
 
-        if os_settings is None:
-            os_settings = self.config['os_settings']
+        os_settings = self.config['os_settings']
 
         umask = os_settings.get('umask')
         if umask is None:
