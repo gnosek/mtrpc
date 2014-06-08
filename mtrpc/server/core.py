@@ -135,15 +135,9 @@ class MTRPCServerInterface(object):
 
     """
 
-    OBLIGATORY_CONFIG_SECTIONS = 'rpc_tree_init', 'amqp_params', 'bindings'
+    OBLIGATORY_CONFIG_SECTIONS = 'rpc_tree_init',
     CONFIG_SECTION_TYPES = dict(
         rpc_tree_init=dict,
-        amqp_params=dict,
-        exchange_types=dict,
-        bindings=list,
-        manager_settings=dict,  # !TODO! - inaczej...
-        manager_attributes=dict,
-        responder_attributes=dict,
         logging_settings=dict,
         os_settings=dict,
         )
@@ -169,12 +163,6 @@ class MTRPCServerInterface(object):
                 ),
                 ),
             ),
-        amqp_params=None,  # to be a dict with some keys...
-        exchange_types=None,  # to be a dict: {exchange, its type}
-        bindings=None,  # to be a list of binding props
-        manager_settings=None,  # to be a dict with some keys... !TODO! - inaczej...
-        manager_attributes=None,  # to be a dict with some keys...
-        responder_attributes=None,  # to be a dict with some keys...
         logging_settings=dict(
             server_logger='mtrpc.server',
             level='info',
