@@ -53,27 +53,6 @@ class LogWarning(UserWarning):
     """Used to log messages using a proper logger without knowing that logger"""
 
 
-
-class RPCObjectTags(dict):
-
-    "Tag dict of RPC-module or method"
-
-    def __init__(self, tag_dict=None):
-        if tag_dict is None:
-            tag_dict = {}
-        dict.__init__(self, tag_dict)
-
-    def __getitem__(self, key):
-        "A missing item is returned as ''; KeyError is not raised"
-        return dict.get(self, key, '')
-
-    def copy(*args, **kwargs): raise NotImplementedError
-
-    @classmethod
-    def fromkeys(*args, **kwargs): raise NotImplementedError
-
-
-
 class RPCObjectHelp(object):
     "Abstract class: help-text generator for RPC-method/RPC-module instance"
 
@@ -218,7 +197,7 @@ class RPCMethod(RPCObject, Callable):
         self.callable_obj = callable_obj
         self.doc = RPCObject._prepare_doc(getattr(callable_obj,
                                                   '__doc__', None))
-        self.tags = RPCObjectTags(getattr(callable_obj, RPC_TAGS, None))
+        self.tags = defaultdict(str, getattr(callable_obj, RPC_TAGS, {}))
         self._examine_and_prepare_arg_spec()
         self.help = RPCMethodHelp(self)
         self.full_name = full_name
@@ -375,7 +354,9 @@ class RPCModule(RPCObject, Mapping):
         self._sorted_submod_items = None  # sorted (locname, RPC-module) pairs
         # public attributes:
         self.doc = doc
-        self.tags = RPCObjectTags(tags)
+        self.tags = defaultdict(str)
+        if tags:
+            self.tags.update(tags)
         self.help = RPCModuleHelp(self)
 
 
@@ -391,7 +372,7 @@ class RPCModule(RPCObject, Mapping):
             if self.tags:
                 assert self.tags == tag_dict
             else:
-                self.tags = RPCObjectTags(tag_dict)
+                self.tags = defaultdict(str, tag_dict)
 
 
     def add_method(self, local_name, rpc_method):
