@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import json
 
 import sys
 import threading
@@ -26,7 +27,7 @@ try:
     while True:
         if restart_lock.acquire(False):   # (<- non-blocking)
             server = AmqpServer.configure_and_start(
-                    CONFIG_PATH,
+                    config_dict=json.load(open(CONFIG_PATH)),
                     force_daemon=force_daemon,
                     final_callback=final_callback,
             )
