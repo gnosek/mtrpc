@@ -127,32 +127,32 @@ class RPCModuleHelp(RPCObjectHelp):
 class RPCObject(object):
     """Abstract class: RPC-method or RPC-module"""
 
-    @staticmethod
-    def _prepare_doc(doc):
-        """Prepare RPC-object doc (assert that it's Unicode, trim it etc.)"""
 
-        if not doc:
-            return u''
+def prepare_doc(doc):
+    """Prepare RPC-object doc (assert that it's Unicode, trim it etc.)"""
 
-        try:
-            doc = unicode(doc)
-        except UnicodeError:
-            raise DocDecodeError('Cannot convert documentation string of '
-                                 '{{rpc_kind}} {{full_name}} to unicode. '
-                                 'To be on the safe side you should always '
-                                 'assure that all your RPC-module/method '
-                                 'docs contaning any non-ASCII characters '
-                                 'are of unicode type (not of str). '
-                                 'Original exception info follows:\n{0}'
-                                 .format(traceback.format_exc()))
+    if not doc:
+        return u''
 
-        doc = doc.strip()
-        try:
-            first_line, rest = doc.split('\n', 1)
-        except ValueError:
-            return doc
-        else:
-            return u'\n'.join((first_line.strip(), textwrap.dedent(rest)))
+    try:
+        doc = unicode(doc)
+    except UnicodeError:
+        raise DocDecodeError('Cannot convert documentation string of '
+                             '{{rpc_kind}} {{full_name}} to unicode. '
+                             'To be on the safe side you should always '
+                             'assure that all your RPC-module/method '
+                             'docs contaning any non-ASCII characters '
+                             'are of unicode type (not of str). '
+                             'Original exception info follows:\n{0}'
+                             .format(traceback.format_exc()))
+
+    doc = doc.strip()
+    try:
+        first_line, rest = doc.split('\n', 1)
+    except ValueError:
+        return doc
+    else:
+        return u'\n'.join((first_line.strip(), textwrap.dedent(rest)))
 
 
 def format_result(result):
@@ -188,8 +188,7 @@ class RPCMethod(RPCObject, Callable):
         if not isinstance(callable_obj, Callable):
             raise TypeError('Method object must be callable')
         self.callable_obj = callable_obj
-        self.doc = RPCObject._prepare_doc(getattr(callable_obj,
-                                                  '__doc__', None))
+        self.doc = prepare_doc(getattr(callable_obj, '__doc__', None))
         self._examine_and_prepare_arg_spec()
         self.help = RPCMethodHelp(self)
         self.full_name = full_name
@@ -517,8 +516,7 @@ class RPCTree(Mapping):
             ant_names.remove('*')
 
         try:
-            doc = RPCObject._prepare_doc(getattr(cur_pymod,
-                                                 RPC_MODULE_DOC, None))
+            doc = prepare_doc(getattr(cur_pymod, RPC_MODULE_DOC, None))
         except DocDecodeError as exc:
             raise UnicodeError(exc.args[0].format(rpc_kind='RPC-module',
                                                   full_name=cur_full_name))
