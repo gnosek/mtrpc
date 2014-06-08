@@ -1,6 +1,5 @@
 import Queue
 import functools
-import json
 import logging
 import os
 import threading
@@ -10,7 +9,6 @@ import sys
 import types
 import imp
 import warnings
-import time
 from mtrpc.common import utils
 from mtrpc.common.const import DEFAULT_LOG_HANDLER_SETTINGS, RPC_METHOD_LIST
 from mtrpc.server import methodtree, threads, daemonize
@@ -178,8 +176,8 @@ class MTRPCServerInterface(object):
                 SIGHUP='restart',
                 ),
             sig_stopping_timeout=60,
-            ),
-        )
+        ),
+    )
 
     _instance = None
     _server_iface_rlock = threading.RLock()

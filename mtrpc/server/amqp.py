@@ -99,5 +99,3 @@ class AmqpServer(MTRPCServerInterface):
             self.manager.join()
 
         return self.manager
-
-
