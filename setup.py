@@ -7,7 +7,7 @@ setup(
     name='mtrpc',
     version=get_git_version(),
     packages=find_packages(exclude=['mtrpc.test']),
-    install_requires=['amqplib', 'decorator'],
+    install_requires=['amqplib', 'decorator', 'flask'],
     author='MegiTeam',
     author_email='admin@megiteam.pl',
     description='Easy JSONRPC over AMQP',
