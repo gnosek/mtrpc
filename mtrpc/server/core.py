@@ -10,7 +10,7 @@ import imp
 import warnings
 from mtrpc.common import utils
 from mtrpc.common.const import DEFAULT_LOG_HANDLER_SETTINGS, RPC_METHOD_LIST
-from mtrpc.server import methodtree, threads, daemonize
+from mtrpc.server import methodtree, daemonize
 
 
 
