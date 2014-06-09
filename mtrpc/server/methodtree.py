@@ -180,6 +180,7 @@ class RPCMethod(Callable):
             self.module = sys.modules[callable_obj.__module__]
         except (AttributeError, KeyError):
             self.module = None
+        self.readonly = getattr(callable_obj, 'readonly', False)
 
     def _test_argspec(self, spec):
         # set attrs informing about special access-related arguments

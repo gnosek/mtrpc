@@ -47,6 +47,7 @@ def list(module_name, deep=False, _access_dict=None,
                                              _access_dict,
                                              _access_key_patt,
                                              _access_keyhole_patt))
+list.readonly = True
 
 
 def list_string(module_name, deep=False, _access_dict=None,
@@ -68,6 +69,7 @@ def list_string(module_name, deep=False, _access_dict=None,
                                       _access_dict,
                                       _access_key_patt,
                                       _access_keyhole_patt))
+list_string.readonly = True
 
 
 def help(name, deep=False, _access_dict=None,
@@ -90,6 +92,7 @@ def help(name, deep=False, _access_dict=None,
                                              _access_dict,
                                              _access_key_patt,
                                              _access_keyhole_patt))
+help.readonly = True
 
 
 def help_string(name, deep=False, _access_dict=None,
@@ -112,6 +115,7 @@ def help_string(name, deep=False, _access_dict=None,
                                        _access_dict,
                                        _access_key_patt,
                                        _access_keyhole_patt))
+help_string.readonly = True
 
 
 #
