@@ -61,8 +61,7 @@ class AmqpServer(MTRPCServerInterface):
                 if not all(isinstance(x, basestring)
                            for x in binding_props):
                     raise TypeError
-                (binding_props
-                ) = threads.BindingProps._make(binding_props)
+                binding_props = threads.BindingProps._make(binding_props)
             except (ValueError, TypeError):
                 raise ValueError("Illegal item in bindings section: "
                                  "{0!r}".format(binding_props))
