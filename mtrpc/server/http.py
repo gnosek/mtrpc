@@ -1,4 +1,5 @@
 from mtrpc.common.const import ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, ACCESS_KEYHOLE_KWARG
+from mtrpc.common.errors import RPCMethodArgError
 from mtrpc.server.core import MTRPCServerInterface
 from flask import Flask, Response, abort, jsonify, request
 
@@ -30,6 +31,13 @@ def build_rpc_args(args):
     return out
 
 
+def call_rpc_object(rpc_object, args):
+    try:
+        return jsonify(response=rpc_object(**build_rpc_args(args)))
+    except RPCMethodArgError as exc:
+        abort(400, str(exc).replace('{name}', rpc_object.full_name))
+
+
 @flask_app.route('/help/<path:rpc_object_url>', methods=['GET'])
 def get_help(rpc_object_url):
     rpc_object = find_rpc_object(rpc_object_url)
@@ -43,7 +51,7 @@ def call_view(rpc_object_url):
         abort(403, 'RPC object is not callable')
     if not getattr(rpc_object, 'readonly', False):
         abort(405, 'Method not allowed')
-    return jsonify(response=rpc_object(**build_rpc_args(request.args)))
+    return call_rpc_object(rpc_object, request.args)
 
 
 @flask_app.route('/call/<path:rpc_object_url>', methods=['POST'])
@@ -51,7 +59,7 @@ def call(rpc_object_url):
     rpc_object = find_rpc_object(rpc_object_url)
     if not callable(rpc_object):
         abort(403, 'RPC object is not callable')
-    return jsonify(response=rpc_object(**build_rpc_args(request.form)))
+    return call_rpc_object(rpc_object, request.form)
 
 
 class HttpServer(MTRPCServerInterface):
