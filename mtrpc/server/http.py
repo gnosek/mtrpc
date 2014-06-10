@@ -1,7 +1,13 @@
+import os
+from itertools import chain
+
+from flask import Flask, Response, abort, jsonify, request
+from gunicorn.config import Config
+from gunicorn.app.base import Application
+
 from mtrpc.common.const import ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, ACCESS_KEYHOLE_KWARG
 from mtrpc.common.errors import RPCMethodArgError
 from mtrpc.server.core import MTRPCServerInterface
-from flask import Flask, Response, abort, jsonify, request
 
 
 flask_app = Flask(__name__)
@@ -62,12 +68,42 @@ def call(rpc_object_url):
     return call_rpc_object(rpc_object, request.form)
 
 
-class HttpServer(MTRPCServerInterface):
+class ConfigurableApplication(Application):
+    @staticmethod
+    def default_cfg():
+        return {
+            'worker_class': 'sync',
+            'workers': 2,
+            'secure_scheme_headers': {
+                'X-FORWARDED-PROTO': 'https'
+            },
+            'preload_app': True,
+            'user': os.getuid(),
+        }
 
+    def __init__(self, app, **config):
+        self.app = app
+        self._config = config
+        super(ConfigurableApplication, self).__init__()
+
+    def load(self):
+        return self.app
+
+    def init(self, parser, opts, args):
+        self.cfg.set('default_proc_name', 'mtrpc')
+
+    def load_config(self):
+        self.cfg = Config()
+        for k, v in chain(self.default_cfg().items(), self._config.items()):
+            self.cfg.set(k.lower(), v)
+
+
+class HttpServer(MTRPCServerInterface):
     RPC_MODE = 'server'
 
     def start(self, final_callback=None):
-        flask_app.run(debug=True)
+        app = ConfigurableApplication(flask_app, bind='0.0.0.0:5000')
+        app.run()
 
     def stop(self, reason='manual stop', loglevel='info', force=False, timeout=30):
         pass
