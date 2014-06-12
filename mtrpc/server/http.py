@@ -101,9 +101,27 @@ class ConfigurableApplication(Application):
 class HttpServer(MTRPCServerInterface):
     RPC_MODE = 'server'
 
+    CONFIG_SECTION_TYPES = dict(
+        MTRPCServerInterface.CONFIG_SECTION_TYPES,
+        http=dict
+    )
+    CONFIG_SECTION_FIELDS = dict(
+        MTRPCServerInterface.CONFIG_SECTION_FIELDS,
+        http={
+            'bind': '127.0.0.1:5000',
+            'debug': False,
+        }
+    )
+
     def start(self, final_callback=None):
-        app = ConfigurableApplication(flask_app, bind='0.0.0.0:5000')
-        app.run()
+        http_debug = self.config['http'].get('debug', self.CONFIG_SECTION_FIELDS['http']['debug'])
+        http_bind = self.config['http'].get('bind', self.CONFIG_SECTION_FIELDS['http']['bind'])
+        if http_debug:
+            host, port = http_bind.rsplit(':', 1)
+            flask_app.run(host=host, port=int(port), debug=True)
+        else:
+            app = ConfigurableApplication(flask_app, bind=http_bind)
+            app.run()
 
     def stop(self, reason='manual stop', loglevel='info', force=False, timeout=30):
         pass
