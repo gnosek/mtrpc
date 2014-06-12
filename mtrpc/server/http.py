@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 from itertools import chain
 
@@ -11,6 +12,10 @@ from mtrpc.server.core import MTRPCServerInterface
 
 
 flask_app = Flask(__name__)
+
+
+def get_lock():
+    return HttpServer.get_instance().writer_lock
 
 
 def find_rpc_object(url):
@@ -65,7 +70,16 @@ def call(rpc_object_url):
     rpc_object = find_rpc_object(rpc_object_url)
     if not callable(rpc_object):
         abort(403, 'RPC object is not callable')
-    return call_rpc_object(rpc_object, request.form)
+    if getattr(rpc_object, 'readonly', False):
+        return call_rpc_object(rpc_object, request.form)
+    lock = get_lock()
+    if lock.acquire(False):
+        try:
+            return call_rpc_object(rpc_object, request.form)
+        finally:
+            lock.release()
+    else:
+        abort(503, 'A writer method is already running')
 
 
 class ConfigurableApplication(Application):
@@ -112,6 +126,10 @@ class HttpServer(MTRPCServerInterface):
             'debug': False,
         }
     )
+
+    def __init__(self):
+        super(HttpServer, self).__init__()
+        self.writer_lock = multiprocessing.Lock()
 
     def start(self, final_callback=None):
         http_debug = self.config['http'].get('debug', self.CONFIG_SECTION_FIELDS['http']['debug'])
