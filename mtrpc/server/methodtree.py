@@ -85,7 +85,7 @@ def prepare_doc(doc):
                              '{{rpc_kind}} {{full_name}} to unicode. '
                              'To be on the safe side you should always '
                              'assure that all your RPC-module/method '
-                             'docs contaning any non-ASCII characters '
+                             'docs containing any non-ASCII characters '
                              'are of unicode type (not of str). '
                              'Original exception info follows:\n{0}'
                              .format(traceback.format_exc()))
@@ -216,13 +216,11 @@ class RPCMethod(Callable):
 
     def _raise_arg_error(self, args, kw):
         a = itertools.imap(repr, args)
-        kw = ('{0}={1!r}'.format(name, val)
-              for name, val in sorted(kw.iteritems()))
+        kw = ('{0}={1!r}'.format(name, val) for name, val in sorted(kw.iteritems()))
         raise RPCMethodArgError("Cannot call method {{name}} -- "
                                 "given arguments: ({0}) don't match "
                                 "method argument specification: {1}"
-                                .format(', '.join(itertools.chain(a, kw)),
-                                        self.formatted_arg_spec))
+                                .format(', '.join(itertools.chain(a, kw)), self.formatted_arg_spec))
 
 
 class RPCModule(Mapping):
@@ -248,11 +246,9 @@ class RPCModule(Mapping):
         if not local_name:
             raise ValueError("Local RPC-name must not be empty")
         if local_name in self._method_dict:
-            raise ValueError("Local RPC-name {0} already is use"
-                             .format(local_name))
+            raise ValueError("Local RPC-name {0} already is use".format(local_name))
         if not isinstance(rpc_method, RPCMethod):
-            raise TypeError("`rpc_method' argument must be "
-                            "an RPCMethod instance")
+            raise TypeError("`rpc_method' argument must be an RPCMethod instance")
         self._sorted_method_items = None  # forget the cache
         self._method_dict[local_name] = rpc_method
 
@@ -261,11 +257,9 @@ class RPCModule(Mapping):
         if not local_name:
             raise ValueError("Local RPC-name must not be empty")
         if local_name in self._submod_dict:
-            raise ValueError("Local RPC-name {0} already is use"
-                             .format(local_name))
+            raise ValueError("Local RPC-name {0} already is use".format(local_name))
         if not isinstance(rpc_module, RPCModule):
-            raise TypeError("`rpc_module' argument must be "
-                            "an RPCModule instance")
+            raise TypeError("`rpc_module' argument must be an RPCModule instance")
         self._sorted_submod_items = None  # forget the cache
         self._submod_dict[local_name] = rpc_module
 
@@ -313,8 +307,7 @@ class RPCModule(Mapping):
     # ...and other Mapping's methods:
     def __contains__(self, local_name):
         """Check existence of (local) name"""
-        return (local_name in self._method_dict
-                or local_name in self._submod_dict)
+        return local_name in self._method_dict or local_name in self._submod_dict
 
     def __len__(self):
         return len(self._method_dict) + len(self._submod_dict)
@@ -578,8 +571,7 @@ class RPCTree(Mapping):
             # add it to the tree:
             self.item_dict[full_name] = rpc_module
         elif not isinstance(rpc_module, RPCModule):
-            raise TypeError("`full_name' argument must not point "
-                            "to anything else than RPCModule instance")
+            raise TypeError("`full_name' argument must point to an RPCModule instance")
         else:
             # update module doc if needed:
             rpc_module.declare_attrs(doc)
@@ -595,16 +587,14 @@ class RPCTree(Mapping):
         try:
             rpc_object = self[full_name]
         except KeyError:
-            raise RPCNotFoundError('RPC-name not found: {0}'
-                                   .format(full_name))
+            raise RPCNotFoundError('RPC-name not found: {0}'.format(full_name))
         try:
             if self.check_access((full_name, rpc_object), access_dict,
                                  access_key_patt, access_keyhole_patt,
                                  required_type):
                 return rpc_object
             else:
-                raise RPCNotFoundError('RPC-name not found: {0}'
-                                       .format(full_name))
+                raise RPCNotFoundError('RPC-name not found: {0}'.format(full_name))
         except TypeError as exc:
             try:
                 if not exc.args[0].startswith('Bad RPC-object type'):
@@ -624,8 +614,7 @@ class RPCTree(Mapping):
         rpc_object_type = type(rpc_object)  # RPCMethod or RPCModule
 
         # If type is specified, the RPC-object must be an instance of it
-        if not (required_type is None
-                or issubclass(rpc_object_type, required_type)):
+        if required_type is not None and not issubclass(rpc_object_type, required_type):
             raise TypeError('Bad RPC-object type ({0} required)'
                             .format(required_type.__name__))
 
@@ -646,14 +635,12 @@ class RPCTree(Mapping):
         try:
             access_key = access_key_patt.format(**actual_access_dict)
         except KeyError:
-            raise BadAccessPatternError('access_key_patt: {0!r}'
-                                        .format(access_key_patt))
+            raise BadAccessPatternError('access_key_patt: {0!r}'.format(access_key_patt))
         # Formatting access_keyhole (using actual_access_dict)...
         try:
             access_keyhole = access_keyhole_patt.format(**actual_access_dict)
         except KeyError:
-            raise BadAccessPatternError('access_keyhole_patt: {0!r}'
-                                        .format(access_keyhole_patt))
+            raise BadAccessPatternError('access_keyhole_patt: {0!r}'.format(access_keyhole_patt))
 
         # Test: access_key must match access_keyhole (regular expression)
         if re.search(access_keyhole, access_key):
@@ -678,8 +665,7 @@ class RPCTree(Mapping):
                                       include_submods=True)
         else:
             prefix = ('' if get_relative_names else full_name)
-            return self._iter_prefixed_names(prefix,
-                                             rpc_module.loc_names2all())
+            return self._iter_prefixed_names(prefix, rpc_module.loc_names2all())
 
     def method_names(self, full_name='', get_relative_names=False, deep=False):
 
