@@ -454,7 +454,7 @@ class RPCTree(Mapping):
                 callable_obj = getattr(cur_pymod, name)
                 # create and put into tree an RPC-method
                 try:
-                    self.add_rpc_method(cur_full_name, name, callable_obj, cur_pymod)
+                    self.add_rpc_method(cur_full_name, name, callable_obj)
                 except DocDecodeError as exc:
                     raise UnicodeError(exc.args[0].format(rpc_kind='RPC-method', full_name=meth_full_name))
 
@@ -507,9 +507,7 @@ class RPCTree(Mapping):
         # run the post-init callable
         postinit_callable(**this_postinit_kwargs)
 
-    def add_rpc_method(self, module_full_name, method_local_name,
-                       callable_obj, python_module):
-
+    def add_rpc_method(self, module_full_name, method_local_name, callable_obj):
         """Add RPC-method"""
 
         if not callable(callable_obj):
