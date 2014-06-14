@@ -11,77 +11,6 @@ from mtrpc.common.errors import RPCMethodArgError
 from mtrpc.server.core import MTRPCServerInterface
 
 
-flask_app = Flask(__name__)
-
-
-def get_lock():
-    return HttpServer.get_instance().writer_lock
-
-
-def find_rpc_object(url):
-    full_path = url.strip('/').replace('/', '.')
-    server = HttpServer.get_instance()
-    try:
-        return server.rpc_tree[full_path]
-    except KeyError:
-        abort(404, 'RPC endpoint not found')
-
-
-def build_rpc_args(args):
-    out = {}
-    for k, v in args.items():
-        if len(v) == 1:
-            out[k] = v[0]
-        else:
-            out[k] = v
-
-    out[ACCESS_DICT_KWARG] = {}
-    out[ACCESS_KEY_KWARG] = ''
-    out[ACCESS_KEYHOLE_KWARG] = ''
-
-    return out
-
-
-def call_rpc_object(rpc_object, args):
-    try:
-        return jsonify(response=rpc_object(**build_rpc_args(args)))
-    except RPCMethodArgError as exc:
-        abort(400, str(exc).replace('{name}', rpc_object.full_name))
-
-
-@flask_app.route('/help/<path:rpc_object_url>', methods=['GET'])
-def get_help(rpc_object_url):
-    rpc_object = find_rpc_object(rpc_object_url)
-    return Response(rpc_object.__doc__, content_type='text/plain')
-
-
-@flask_app.route('/call/<path:rpc_object_url>', methods=['GET'])
-def call_view(rpc_object_url):
-    rpc_object = find_rpc_object(rpc_object_url)
-    if not callable(rpc_object):
-        abort(403, 'RPC object is not callable')
-    if not getattr(rpc_object, 'readonly', False):
-        abort(405, 'Method not allowed')
-    return call_rpc_object(rpc_object, request.args)
-
-
-@flask_app.route('/call/<path:rpc_object_url>', methods=['POST'])
-def call(rpc_object_url):
-    rpc_object = find_rpc_object(rpc_object_url)
-    if not callable(rpc_object):
-        abort(403, 'RPC object is not callable')
-    if getattr(rpc_object, 'readonly', False):
-        return call_rpc_object(rpc_object, request.form)
-    lock = get_lock()
-    if lock.acquire(False):
-        try:
-            return call_rpc_object(rpc_object, request.form)
-        finally:
-            lock.release()
-    else:
-        abort(503, 'A writer method is already running')
-
-
 class ConfigurableApplication(Application):
     @staticmethod
     def default_cfg():
@@ -131,9 +60,72 @@ class HttpServer(MTRPCServerInterface):
         super(HttpServer, self).__init__()
         self.writer_lock = multiprocessing.Lock()
 
+    def find_rpc_object(self, url):
+        full_path = url.strip('/').replace('/', '.')
+        try:
+            return self.rpc_tree[full_path]
+        except KeyError:
+            abort(404, 'RPC endpoint not found')
+
+    @classmethod
+    def build_rpc_args(cls, args):
+        out = {}
+        for k, v in args.items():
+            if len(v) == 1:
+                out[k] = v[0]
+            else:
+                out[k] = v
+
+        out[ACCESS_DICT_KWARG] = {}
+        out[ACCESS_KEY_KWARG] = ''
+        out[ACCESS_KEYHOLE_KWARG] = ''
+
+        return out
+
+    @classmethod
+    def call_rpc_object(cls, rpc_object, args):
+        try:
+            return jsonify(response=rpc_object(**cls.build_rpc_args(args)))
+        except RPCMethodArgError as exc:
+            abort(400, str(exc).replace('{name}', rpc_object.full_name))
+
+    def get_help(self, rpc_object_url):
+        rpc_object = self.find_rpc_object(rpc_object_url)
+        return Response(rpc_object.__doc__, content_type='text/plain')
+
+    def call_view(self, rpc_object_url):
+        rpc_object = self.find_rpc_object(rpc_object_url)
+        if not callable(rpc_object):
+            abort(403, 'RPC object is not callable')
+        if not getattr(rpc_object, 'readonly', False):
+            abort(405, 'Method not allowed')
+        return self.call_rpc_object(rpc_object, request.args)
+
+    def call(self, rpc_object_url):
+        rpc_object = self.find_rpc_object(rpc_object_url)
+        if not callable(rpc_object):
+            abort(403, 'RPC object is not callable')
+        if getattr(rpc_object, 'readonly', False):
+            return self.call_rpc_object(rpc_object, request.form)
+        if self.writer_lock.acquire(False):
+            try:
+                return self.call_rpc_object(rpc_object, request.form)
+            finally:
+                self.writer_lock.release()
+        else:
+                abort(503, 'A writer method is already running')
+
+    def build_wsgi_app(self):
+        flask_app = Flask(__name__)
+        flask_app.route('/help/<path:rpc_object_url>', methods=['GET'])(self.get_help)
+        flask_app.route('/call/<path:rpc_object_url>', methods=['GET'])(self.call_view)
+        flask_app.route('/call/<path:rpc_object_url>', methods=['POST'])(self.call)
+        return flask_app
+
     def start(self, final_callback=None):
         http_debug = self.config['http'].get('debug', self.CONFIG_SECTION_FIELDS['http']['debug'])
         http_bind = self.config['http'].get('bind', self.CONFIG_SECTION_FIELDS['http']['bind'])
+        flask_app = self.build_wsgi_app()
         if http_debug:
             host, port = http_bind.rsplit(':', 1)
             flask_app.run(host=host, port=int(port), debug=True)
