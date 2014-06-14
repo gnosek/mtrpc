@@ -115,8 +115,6 @@ Responder (publisher) queue name:
 
 """
 
-
-
 import abc
 import functools
 import hashlib
@@ -138,7 +136,6 @@ from ..common.const import *
 from ..common.errors import *
 
 
-
 #
 # Auxiliary constants and types
 #
@@ -156,26 +153,21 @@ NoResult = namedtuple('NoResult', 'task_id')
 RPCRequest = namedtuple('RPCRequest', 'id method params kwparams')
 
 
-
 #
 # Abstract base classes
 #
 
 class ServiceThread(threading.Thread):
-
     """Abstract class: service thread"""
-
 
     __metaclass__ = abc.ABCMeta
 
     instance_counter = itertools.count(1)
 
-
     class EverydayError(Exception):
-        "An error that doesn't testify to a bug"
+        """An error that doesn't testify to a bug"""
 
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kw):
 
         """General initialization.
 
@@ -203,49 +195,41 @@ class ServiceThread(threading.Thread):
 
         threading.Thread.__init__(self, name=name)
         self.daemon = True
-        self._set_logger(kwargs.pop('log', None))
+        self._set_logger(kw.pop('log', None))
         try:
             self.stopping = None
-            attributes = kwargs.pop('attributes', {})
+            attributes = kw.pop('attributes', {})
 
             # subclass-specific initialization
-            self.init(*args, **kwargs)
+            self.init(*args, **kw)
 
             # optional after-init customization of instance attributes
             for key, value in attributes.iteritems():
                 setattr(self, key, value)
         except Exception:
-            self.log.critical('Fatal error during initializing service '
-                              'thread %s. Re-raising the exception:',
+            self.log.critical('Fatal error during initializing service thread %s. Re-raising the exception:',
                               self, exc_info=True)
             raise
 
-
     def _set_logger(self, log_arg):
         if log_arg is None:
-            logging.basicConfig(format='%(asctime)s %(levelno)s '
-                                       '@%(threadName)s: %(message)s',
-                                level=logging.INFO)
+            logging.basicConfig(format='%(asctime)s %(levelno)s @%(threadName)s: %(message)s', level=logging.INFO)
             self.log = logging.getLogger()
         elif isinstance(log_arg, basestring):
             self.log = logging.getLogger(log_arg)
         else:
             self.log = log_arg
-        self.log.debug('The logger of service thread %s is ready '
-                       '[as you see :-)]', self)
-
+        self.log.debug('The logger of service thread %s is ready [as you see :-)]', self)
 
     def __str__(self):
         return '<{0}>'.format(self.name)
 
-
     @abc.abstractmethod
     def init(self):
-        "Subclass-specific; called from __init__() (before the thread starts)"
-
+        """Subclass-specific; called from __init__() (before the thread starts)"""
 
     def run(self):
-        "Service thread activity"
+        """Service thread activity"""
         try:
             self.log.info('Service thread started...')
             self.main()
@@ -257,7 +241,7 @@ class ServiceThread(threading.Thread):
 
 
     def main(self):
-        "Main part of service thread activity"
+        """Main part of service thread activity"""
         try:
             try:
                 self.starting_action()
@@ -280,24 +264,19 @@ class ServiceThread(threading.Thread):
         finally:
             self.final_action()
 
-
     @abc.abstractmethod
     def starting_action(self):
-        "Initial action (within the thread, before the main loop)"
-
+        """Initial action (within the thread, before the main loop)"""
 
     @abc.abstractmethod
     def main_loop(self):
-        "Main activity loop, specific to a subclass"
-
+        """Main activity loop, specific to a subclass"""
 
     @abc.abstractmethod
     def final_action(self):
-        "Final action (within the thread, after the main loop, at the end)"
-
+        """Final action (within the thread, after the main loop, at the end)"""
 
     def join_stopping(self, timeout=None):
-
         """Join to the thread; to be called from another thread.
 
         timeout == None  =>  wait until the thread terminates
@@ -325,25 +304,27 @@ class ServiceThread(threading.Thread):
             return stopped
 
 
-
 class AMQPClientServiceThread(ServiceThread):
-
     """Abstract class: service thread being AMQP client"""
 
-    connect_attempts = 0      # attempts to (re)connect (0 means infinity)
-    try_action_attempts = 0   # attempts to (re)try action (0 means infinity)
-    reconnect_interval = 1    # in seconds
-
+    connect_attempts = 0  # attempts to (re)connect (0 means infinity)
+    try_action_attempts = 0  # attempts to (re)try action (0 means infinity)
+    reconnect_interval = 1  # in seconds
 
     class StoppingException(Exception):
-        "An Exception not caught by @retry wrapper"
+        """An Exception not caught by @retry wrapper"""
 
     class AMQPError(ServiceThread.EverydayError):
-        "A problem with AMQP connection"
+        """A problem with AMQP connection"""
 
+    def __init__(self, *args, **kw):
+        super(AMQPClientServiceThread, self).__init__(*args, **kw)
+        self.amqp_conn = None
+        self.amqp_channel = None
+        self._amqp_params = None
+        self._is_connected = False
 
     def init(self, amqp_params):
-
         """Initialization specific to AMQP client.
 
         Argument:
@@ -356,28 +337,24 @@ class AMQPClientServiceThread(ServiceThread):
         self._amqp_params = amqp_params
         self._is_connected = False
 
-
     def starting_action(self):
-        "Initial action (within the thread, before the main loop)"
+        """Initial action (within the thread, before the main loop)"""
         try:
             self.amqp_init()
         except self.AMQPError:
             self.log.error('AMQP initialization failed. Raising AMQPError...')
             raise
 
-
     def amqp_init(self):
-        "Init AMQP communication"
+        """Init AMQP communication"""
         self.log.info('Initializing AMQP channel and connection...')
         self.amqp_conn = self._new_amqp_conn(self._amqp_params)
         self.amqp_channel = self.amqp_conn.channel()
         self.amqp_channel.basic_qos(prefetch_size=0, prefetch_count=1, a_global=False)
         self._is_connected = True
 
-
     def _new_amqp_conn(self, amqp_params):
-
-        "Create and return AMQP connection, retry a number of times if failed"
+        """Create and return AMQP connection, retry a number of times if failed"""
 
         host_descr = amqp_params.get('host', '<default adress setting>')
 
@@ -402,9 +379,8 @@ class AMQPClientServiceThread(ServiceThread):
                              'attempts to connect to AMQP broker'
                              .format(attempt_nr))
 
-
     def amqp_close(self):
-        "Close AMQP communication"
+        """Close AMQP communication"""
         if self._is_connected:
             self.log.info('Closing AMQP channel and connection...')
             try:
@@ -420,11 +396,9 @@ class AMQPClientServiceThread(ServiceThread):
 
     final_action = amqp_close
 
-
     @staticmethod
     def retry(action):
-
-        "Decorate a method with AMQP-reinitializing-and-retrying wrapper"
+        """Decorate a method with AMQP-reinitializing-and-retrying wrapper"""
 
         @functools.wraps(action)
         def reinit_retry_wrapper(self, *args, **kwargs):
@@ -462,7 +436,6 @@ class AMQPClientServiceThread(ServiceThread):
         return reinit_retry_wrapper
 
 
-
 #
 # The actual MTRPC server classes
 #
@@ -471,7 +444,6 @@ class AMQPClientServiceThread(ServiceThread):
 # Manager + consumer class
 
 class RPCManager(AMQPClientServiceThread):
-
     """RPC manager (gets requests, spawn tasks, spawns/stops responder).
 
     After instance creation (see init() method docstring) call start() method
@@ -492,7 +464,6 @@ class RPCManager(AMQPClientServiceThread):
 
     instance_counter = itertools.count(1)
 
-
     #
     # Auxiliary classes related to TCP-transport of AMQP method reader
 
@@ -506,24 +477,20 @@ class RPCManager(AMQPClientServiceThread):
         def RTW__get_unwrapped(self):
             return self.RTW__orig_transport
 
-
     class SSLTransportWrapper(_AbstractTransportWrapper):
 
         _read = amqp_transport.SSLTransport._read.__func__
 
         def __init__(self, manager, transport):
-            self.sslobj = RPCManager.SockWrapper(manager,
-                                                 transport.sock, 'read')
+            self.sslobj = RPCManager.SockWrapper(manager, transport.sock, 'read')
             super(self.__class__, self).__init__(manager, transport)
-
 
     class TCPTransportWrapper(_AbstractTransportWrapper):
 
         _read = amqp_transport.TCPTransport._read.__func__
 
         def __init__(self, manager, transport):
-            self.sock = RPCManager.SockWrapper(manager,
-                                               transport.sock, 'recv')
+            self.sock = RPCManager.SockWrapper(manager, transport.sock, 'recv')
             super(self.__class__, self).__init__(manager, transport)
             self._read_buffer = transport._read_buffer
 
@@ -531,7 +498,6 @@ class RPCManager(AMQPClientServiceThread):
             transport = super(self.__class__, self).RTW__get_unwrapped()
             transport._read_buffer = self._read_buffer
             return transport
-
 
     class SockWrapper(object):
 
@@ -547,9 +513,7 @@ class RPCManager(AMQPClientServiceThread):
             self.SW__sock.settimeout(0)  # non-blocking
             try:
                 while True:
-                    sel = select.select([self.SW__sock, resp_stopping_fd_r],
-                                        [], [],
-                                        self.SW__manager.sel_timeout)[0]
+                    sel = select.select([self.SW__sock, resp_stopping_fd_r], [], [], self.SW__manager.sel_timeout)[0]
                     if resp_stopping_fd_r in sel:
                         try:
                             os.read(resp_stopping_fd_r, 1)
@@ -562,20 +526,15 @@ class RPCManager(AMQPClientServiceThread):
                                 "TODO: log"
                             else:
                                 # responder-stopping pipe broken?
-                                raise (self.SW__manager
-                                      ).RespStopping(self.SW__manager,
-                                                     traceback.format_exc())
+                                raise self.SW__manager.RespStopping(self.SW__manager, traceback.format_exc())
                         else:
                             # responder-stopping message (closed pipe)
-                            raise (self.SW__manager
-                                  ).RespStopping(self.SW__manager, None)
+                            raise self.SW__manager.RespStopping(self.SW__manager, None)
                     if self.SW__sock in sel:
                         try:
-                            return self.SW__sock_reading_method(*args,
-                                                                **kwargs)
+                            return self.SW__sock_reading_method(*args, **kwargs)
                         except EnvironmentError as exc:
-                            if exc.errno in (errno.EAGAIN,
-                                             errno.EWOULDBLOCK):
+                            if exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
                                 # nothing really happened -> continue...
                                 # (see: BUGS section of select(2) manpage
                                 # about spurious readiness notifications)
@@ -585,27 +544,26 @@ class RPCManager(AMQPClientServiceThread):
             finally:
                 self.SW__sock.settimeout(orig_timeout)
 
-
     class RespStopping(AMQPClientServiceThread.StoppingException):
-        "Exception raised when stopping request from the responder received"
-        def __init__(self, manager, *args, **kwargs):
-            manager.unwrap_the_reader_transport()
-            super(self.__class__, self).__init__(*args, **kwargs)
+        """Exception raised when stopping request from the responder received"""
 
+        def __init__(self, manager, *args, **kw):
+            manager.unwrap_the_reader_transport()
+            super(self.__class__, self).__init__(*args, **kw)
 
     #
     # Methods
 
     def init(self,
-             amqp_params,           # dict (params for AMQP connection...)
-             bindings,              # seq of lists of BindingProps instances  # !TODO! to idea stara, ale jara...
-             exchange_types,        # dict of exchange: 'topic'|'direct' items
-             client_id,             # string: globally unique client name    # !TODO! ...
-             rpc_tree,              # methodtree.RPCTree instance
-             responder,             # RPCResponder instance (not started)
-             task_dict,             # empty dict
-             result_fifo,           # Queue.Queue instance
-             mutex,                 # threading.Lock instance
+             amqp_params,  # dict (params for AMQP connection...)
+             bindings,  # seq of lists of BindingProps instances  # !TODO! to idea stara, ale jara...
+             exchange_types,  # dict of exchange: 'topic'|'direct' items
+             client_id,  # string: globally unique client name    # !TODO! ...
+             rpc_tree,  # methodtree.RPCTree instance
+             responder,  # RPCResponder instance (not started)
+             task_dict,  # empty dict
+             result_fifo,  # Queue.Queue instance
+             mutex,  # threading.Lock instance
              final_callback=None):  # callable object or None
 
         """Manager specific initalization.
@@ -649,11 +607,10 @@ class RPCManager(AMQPClientServiceThread):
         #* bindings -- sequence of lists of BindingProps instances; instances
         #  being items of the same list will be used with the same AMQP queue;
 
-
         AMQPClientServiceThread.init(self, amqp_params)
 
-        self._queues = []   # queue names (in sorted order)
-        self._queues2bindings = {}   # queue names and their binding props
+        self._queues = []  # queue names (in sorted order)
+        self._queues2bindings = {}  # queue names and their binding props
         # !TODO!
         #for i, binding_props in enumerate(bindings):
         #    queue = '.'.join([self.queue_prefix, str(i)])
@@ -690,17 +647,14 @@ class RPCManager(AMQPClientServiceThread):
         self.result_fifo = result_fifo  # (<- shared also with task threads)
         self.mutex = mutex
         self.responder.manager = self
-        (self.resp_stopping_fd_r,
-         self.responder.stopping_fd_w) = os.pipe()
+        self.resp_stopping_fd_r, self.responder.stopping_fd_w = os.pipe()
         self.responder.start()
 
         self.final_callback = final_callback
         self._task_id_gen = itertools.count(1)
 
-
     def amqp_init(self):
-
-        "Init AMQP communication, bind queues/exchanges, declare consuming"
+        """Init AMQP communication, bind queues/exchanges, declare consuming"""
 
         AMQPClientServiceThread.amqp_init(self)
 
@@ -711,9 +665,7 @@ class RPCManager(AMQPClientServiceThread):
                 self.amqp_channel.queue_declare(queue=queue,
                                                 durable=True,
                                                 auto_delete=True)
-                (exchange_type
-                ) = self._exchange_types.get(props.exchange,
-                                             self.default_exchange_type)
+                exchange_type = self._exchange_types.get(props.exchange, self.default_exchange_type)
                 self.amqp_channel.exchange_declare(exchange=props.exchange,
                                                    type=exchange_type,
                                                    durable=True,
@@ -725,34 +677,10 @@ class RPCManager(AMQPClientServiceThread):
                                                 no_ack=False,
                                                 callback=self.get_and_go,
                                                 consumer_tag=queue)  # (<-yes)
-            # !TODO!
-            #(wakeup_q, _, _
-            #) = self.amqp_channel.queue_declare(durable=False,
-            #                                    auto_delete=True)
-            #
-            #self.wakeup_routing_key = '.'.join(['wakeup', self.client_id, wakeup_q])
-            #
-            #self.amqp_channel.exchange_declare(exchange=self.wakeup_exchange,
-            #                                   type='direct',
-            #                                   durable=False,
-            #                                   auto_delete=True)
-            #self.amqp_channel.queue_bind(queue=wakeup_q,
-            #                             exchange=self.wakeup_exchange,
-            #                             routing_key=self.wakeup_routing_key)
-            #self.amqp_channel.basic_consume(queue=wakeup_q,
-            #                                no_ack=False,
-            #                                callback=self.get_and_go,
-            #                                consumer_tag="_wakeup_queue")  # (<-yes)
-            #
-            #(self._queues2bindings["_wakeup_queue"]
-            #) = BindingProps(self.wakeup_exchange, self.wakeup_routing_key,
-            #                 None, None)
-            #
         except Exception:
             raise self.AMQPError(traceback.format_exc())
 
         self.wrap_the_reader_transport()
-
 
     def wrap_the_reader_transport(self):
         # wrap the transport object used to receive AMQP messages from the broker
@@ -770,18 +698,14 @@ class RPCManager(AMQPClientServiceThread):
         self.log.debug('{0} transport object wrapped with {1}'
                        .format(transport, method_reader.source))
 
-
     def unwrap_the_reader_transport(self):
         # unwrap the transport object used to receive AMQP messages from the broker
         method_reader = self.amqp_conn.method_reader
         method_reader.source = method_reader.source.RTW__get_unwrapped()
-        self.log.debug('{0} transport object unwrapped'
-                       .format(method_reader.source))
-
+        self.log.debug('{0} transport object unwrapped'.format(method_reader.source))
 
     def main_loop(self):
-
-        "Main activity loop: consume messages, spawn tasks"
+        """Main activity loop: consume messages, spawn tasks"""
 
         try:
             while not (self.stopping or self.responder.stopping):
@@ -795,20 +719,17 @@ class RPCManager(AMQPClientServiceThread):
             # stopping originally caused by the responder
             reason = self.responder.stopping.reason
             self.stopping = self.responder.stopping._replace(
-                    reason='requested by the responder {0} ({1})'
-                    .format(self.responder, reason)
+                reason='requested by the responder {0} ({1})'
+                .format(self.responder, reason)
             )
-
 
     @AMQPClientServiceThread.retry
     def wait_for_msg(self):
-        "Consume AMQP message when it arrives (calling get_and_go() callback)"
+        """Consume AMQP message when it arrives (calling get_and_go() callback)"""
         return self.amqp_channel.wait()
 
-
     def get_and_go(self, msg):
-
-        "AMQP consume callback: prepare a task and start a task thread"
+        """AMQP consume callback: prepare a task and start a task thread"""
 
         queue = msg.delivery_info['consumer_tag']  # (queue == consumer tag)
         #if queue == "_wakeup_queue":  # !TODO! ...
@@ -853,8 +774,7 @@ class RPCManager(AMQPClientServiceThread):
 
     @staticmethod
     def create_access_dict(queue, binding_props, delivery_info, reply_to):
-
-        "Prepare the dict to be used to format actual key and keyhole strings"
+        """Prepare the dict to be used to format actual key and keyhole strings"""
 
         rk = binding_props.routing_key
         msg_rk = delivery_info['routing_key']
@@ -862,22 +782,20 @@ class RPCManager(AMQPClientServiceThread):
         # (Please note such formatting possibilites as:
         # "{rk_split[2]}", "{delivery_info[redelivered]" etc.)
         return dict(
-            exchange = binding_props.exchange,      # exchange name
-            queue = queue,                          # queue name
-            rk = rk,                                # consumer's routing key
-            rk_split = rk.split('.'),                      # ^ split using '.'
-            rk_revsplit = list(reversed(rk.split('.'))),          # ^ reversed
-            msg_rk = msg_rk,                        # original msg routing key
-            msg_rk_split = msg_rk.split('.'),              # ^ split using '.'
-            msg_rk_revsplit = list(reversed(msg_rk.split('.'))),  # ^ reversed
-            delivery_info = delivery_info,          # msg delivery info dict
-            reply_to = reply_to,                    # msg reply-to info
+            exchange=binding_props.exchange,  # exchange name
+            queue=queue,  # queue name
+            rk=rk,  # consumer's routing key
+            rk_split=rk.split('.'),  # ^ split using '.'
+            rk_revsplit=list(reversed(rk.split('.'))),  # ^ reversed
+            msg_rk=msg_rk,  # original msg routing key
+            msg_rk_split=msg_rk.split('.'),  # ^ split using '.'
+            msg_rk_revsplit=list(reversed(msg_rk.split('.'))),  # ^ reversed
+            delivery_info=delivery_info,  # msg delivery info dict
+            reply_to=reply_to,  # msg reply-to info
         )
 
-
     def final_action(self):
-
-        "Close AMQP conn, request the responder to stop, run final callback"
+        """Close AMQP conn, request the responder to stop, run final callback"""
 
         try:
             try:
@@ -908,7 +826,6 @@ class RPCManager(AMQPClientServiceThread):
                     self.log.exception('Error while tried to call '
                                        'the final callback:')
 
-
     def stop(self, reason='manual stop', loglevel='info', force=False,
              timeout=None):
 
@@ -927,23 +844,19 @@ class RPCManager(AMQPClientServiceThread):
         self._stop_the_responder(self.stopping)
         return self.join_stopping(timeout)
 
-
     def _stop_the_responder(self, stopping):
-        "Request the responder to stop"
+        """Request the responder to stop"""
         if threading.current_thread() is self:
-            reason = '{0} {1} ({2})'.format(
-                MGR_REASON_PREFIX, self, stopping.reason)
+            reason = '{0} {1} ({2})'.format(MGR_REASON_PREFIX, self, stopping.reason)
         else:
             reason = stopping.reason
         self.responder.stop(reason, stopping.loglevel, stopping.force)
-
 
 
 #
 # Responder (publisher of results) class
 
 class RPCResponder(AMQPClientServiceThread):
-
     """RPC responder (puts task results into appropriate AMQP queues).
 
     After creation of an instance (see init() method docstring) it should
@@ -954,7 +867,6 @@ class RPCResponder(AMQPClientServiceThread):
 
     exchange = DEFAULT_RESP_EXCHANGE
     instance_counter = itertools.count(1)
-
 
     def init(self, amqp_params, task_dict, result_fifo, mutex):
 
@@ -984,7 +896,6 @@ class RPCResponder(AMQPClientServiceThread):
         self.result_fifo = result_fifo  # (<- ...as well as with task threads)
         self.mutex = mutex
 
-
     def amqp_init(self):
 
         "Init AMQP communication and declare the exchange"
@@ -999,10 +910,8 @@ class RPCResponder(AMQPClientServiceThread):
         except Exception:
             raise self.AMQPError(traceback.format_exc())
 
-
     def main_loop(self):
-
-        "Main activity loop: getting and sending responses with results"
+        """Main activity loop: getting and sending responses with results"""
 
         while not (self.stopping
                    and (self.stopping.force or not self.task_dict)):
@@ -1015,17 +924,13 @@ class RPCResponder(AMQPClientServiceThread):
             self.reply(result.reply_to, msg)
             del self.task_dict[result.task_id]
 
-
     @AMQPClientServiceThread.retry
     def reply(self, reply_to, msg):
-        "Send a response to RPC client (via AMQP broker)"
-        self.amqp_channel.basic_publish(msg, exchange=self.exchange,
-                                        routing_key=reply_to)
-
+        """Send a response to RPC client (via AMQP broker)"""
+        self.amqp_channel.basic_publish(msg, exchange=self.exchange, routing_key=reply_to)
 
     def final_action(self):
-
-        "Wake up the manager, close the connection, check state of tasks"
+        """Wake up the manager, close the connection, check state of tasks"""
 
         try:
             os.close(self.stopping_fd_w)
@@ -1063,7 +968,6 @@ class RPCResponder(AMQPClientServiceThread):
                                ', '.join(sorted(map(str, not_completed))),
                                ', '.join(sorted(map(str, task_threads))))
 
-
     def stop(self, reason='manual stop', loglevel='info', force=False):
 
         """Stop the service thread; to be called from another thread.
@@ -1079,53 +983,46 @@ class RPCResponder(AMQPClientServiceThread):
             self.stopping = stopping
 
 
-
 #
 # Worker class (its instances are created by manager)
 
 class RPCTaskThread(threading.Thread):
-
-    "RPC task thread (deserializes and executes requests, serializes results)"
+    """RPC task thread (deserializes and executes requests, serializes results)"""
 
     instance_counter = itertools.count(1)
-
 
     def __init__(self, task, rpc_tree, result_fifo, log):
         task_thread_id = next(self.instance_counter)
         threading.Thread.__init__(self, name='TaskThread-{0}/task-{1}'
-                                             .format(task_thread_id, task.id))
+                                  .format(task_thread_id, task.id))
         self.task = task
         self.rpc_tree = rpc_tree
         self.result_fifo = result_fifo
         self.log = log
 
-
     def __str__(self):
         return '<{0}>'.format(self.name)
-
 
     def parse_request(self, task):
         self.log.debug('Deserializing request message: %r...',
                        task.request_message)
         request = self._deserialize_request(task.request_message)
-        (rpc_method
-        ) = self.rpc_tree.try_to_obtain(request.method,
+        rpc_method = self.rpc_tree.try_to_obtain(request.method,
                                         task.access_dict,
                                         task.access_key_patt,
                                         task.access_keyhole_patt,
-                                        required_type
-                                        =methodtree.RPCMethod)
+                                        required_type=methodtree.RPCMethod)
         return request, rpc_method
 
     def call_rpc_method(self, request, rpc_method, task):
         self.log.info('Calling %s%s', request.method,
                       rpc_method.format_args(request.params, request.kwparams))
-        kwargs = request.kwparams.copy()
-        kwargs[ACCESS_DICT_KWARG] = task.access_dict
-        kwargs[ACCESS_KEY_KWARG] = task.access_key_patt
-        kwargs[ACCESS_KEYHOLE_KWARG] = task.access_keyhole_patt
+        kw = request.kwparams.copy()
+        kw[ACCESS_DICT_KWARG] = task.access_dict
+        kw[ACCESS_KEY_KWARG] = task.access_key_patt
+        kw[ACCESS_KEYHOLE_KWARG] = task.access_keyhole_patt
         try:
-            result = rpc_method(*request.params, **kwargs)
+            result = rpc_method(*request.params, **kw)
 
         except RPCMethodArgError:
             exc_type, orig_exc = sys.exc_info()[:2]
@@ -1171,7 +1068,6 @@ class RPCTaskThread(threading.Thread):
 
         return dict(name=exc_type.__name__, message=str(exc), data=exc_dict)
 
-
     def send_response(self, result, error, request_id):
         response_dict = {
             'result': result,
@@ -1185,12 +1081,11 @@ class RPCTaskThread(threading.Thread):
         self.result_fifo.put(result)
         self.log.debug('Result %r put into result fifo', result)
 
-
     def send_exception(self, request_id):
         self.send_response(None, self.format_exception(), request_id)
 
     def run(self):
-        "Thread activity"
+        """Thread activity"""
         self.log.debug('Task thread started')
 
         task = self.task
@@ -1204,7 +1099,6 @@ class RPCTaskThread(threading.Thread):
             self.send_exception(request_id)
         else:
             self.send_response(result, None, request.id)
-
 
     def _deserialize_request(self, request_message):
         try:
@@ -1232,7 +1126,6 @@ class RPCTaskThread(threading.Thread):
             raise RPCNotificationsNotImplementedError(message_data)
 
         return request
-
 
     def _serialize_response(self, response_dict):
         try:
