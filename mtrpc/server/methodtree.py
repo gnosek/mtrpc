@@ -25,10 +25,9 @@ import textwrap
 import traceback
 import warnings
 import sys
-from collections import defaultdict, \
-    Callable, Hashable, Mapping, \
-    MutableSequence, MutableSet, MutableMapping
 from mtrpc.common import utils
+
+from collections import defaultdict, Callable, Mapping
 
 from mtrpc.common.const import ACC_KWARGS, ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, ACCESS_KEYHOLE_KWARG, RPC_METHOD_LIST, \
     RPC_POSTINIT, RPC_MODULE_DOC
@@ -109,17 +108,6 @@ def get_effective_signature(obj):
     defaults = spec.defaults or ()
     # difference between number of args and number of defined default vals
     args_defs_diff = len(spec.args) - len(defaults)
-    # warn about default arg values that are mutable
-    # (such situation may be risky because default values are initialized
-    # once, therefore they can be shared by different calls)
-    # note: this check is not reliable (but still may appear to be useful)
-    for arg_i, default in enumerate(defaults, args_defs_diff):
-        if not (is_immutable(default) or spec.args[arg_i] in ACC_KWARGS):
-            warnings.warn("Default value {0!r} of the argument {1!r} "
-                          "of the RPC-method's callable object {2!r} "
-                          "seems to be a mutable container"
-                          .format(default, arg_i, obj),
-                          LogWarning)
 
     # format official argument specification
     # -- without special access-related arguments (ACC_KWARGS)
@@ -239,14 +227,6 @@ class RPCMethod(Callable):
                                 "method argument specification: {1}"
                                 .format(', '.join(itertools.chain(a, kw)),
                                         self.formatted_arg_spec))
-
-
-def is_immutable(arg):
-    """Try to check if default val is immutable (test isn't 100%-reliable!)"""
-    return (isinstance(arg, Hashable)
-            and not isinstance(arg, (MutableSequence,
-                                     MutableSet,
-                                     MutableMapping)))
 
 
 class RPCModule(Mapping):
