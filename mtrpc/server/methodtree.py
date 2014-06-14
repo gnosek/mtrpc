@@ -336,9 +336,6 @@ class RPCTree(Mapping):
 
         self.item_dict = {}  # maps full names to RPC-objects
         self.is_built = False
-        self.method_names2pymods = {}  # maps method full names to the
-        # Python modules that the method
-        # callables were taken from
         self.rpc_mode = None  # 'server' or 'cli'
 
     def build(self,
@@ -527,7 +524,6 @@ class RPCTree(Mapping):
 
         rpc_module = self.item_dict[module_full_name]
         rpc_method = RPCMethod(callable_obj, method_full_name)
-        self.method_names2pymods[method_full_name] = python_module
         rpc_module.add_method(method_local_name, rpc_method)
         self.item_dict[method_full_name] = rpc_method
 
