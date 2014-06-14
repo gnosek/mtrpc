@@ -6,7 +6,6 @@
 """Python module that defines standard RPC-module 'system' with its methods"""
 
 import __builtin__
-import functools
 import itertools
 
 from ..common.utils import basic_postinit
@@ -160,11 +159,10 @@ def _iter_mod_subitems(module_name, deep,
                        _access_dict, _access_key_patt, _access_keyhole_patt):
     """Iter. over accessible pairs (<full name>, <rpc submodule or method>)"""
 
-    filter_key = functools.partial(
-        rpc_tree.check_access,
-        access_dict=_access_dict,
-        access_key_patt=_access_key_patt,
-        access_keyhole_patt=_access_keyhole_patt,
-        required_type=None,
-    )
-    return filter(filter_key, rpc_tree.all_items(module_name, deep=deep))
+    for name, item in rpc_tree.all_items(module_name, deep=deep):
+        if rpc_tree.check_access((name, item),
+                                 access_dict=_access_dict,
+                                 access_key_patt=_access_key_patt,
+                                 access_keyhole_patt=_access_keyhole_patt,
+                                 required_type=None):
+            yield name, item
