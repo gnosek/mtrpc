@@ -667,40 +667,6 @@ class RPCTree(Mapping):
             prefix = ('' if get_relative_names else full_name)
             return self._iter_prefixed_names(prefix, rpc_module.loc_names2all())
 
-    def method_names(self, full_name='', get_relative_names=False, deep=False):
-
-        """Iterator over sorted RPC-method names"""
-
-        rpc_module = self._get_rpc_mod(full_name)
-        if deep:
-            # get recursively
-            return self._iter_subtree(full_name, rpc_module,
-                                      get_relative_names,
-                                      get_names_only=True,
-                                      include_methods=True,
-                                      include_submods=False)
-        else:
-            prefix = ('' if get_relative_names else full_name)
-            return self._iter_prefixed_names(prefix,
-                                             rpc_module.loc_names2methods())
-
-    def submod_names(self, full_name='', get_relative_names=False, deep=False):
-
-        """Iterator over sorted RPC-submodule names"""
-
-        rpc_module = self._get_rpc_mod(full_name)
-        if deep:
-            # get recursively
-            return self._iter_subtree(full_name, rpc_module,
-                                      get_relative_names,
-                                      get_names_only=True,
-                                      include_methods=False,
-                                      include_submods=True)
-        else:
-            prefix = ('' if get_relative_names else full_name)
-            return self._iter_prefixed_names(prefix,
-                                             rpc_module.loc_names2submods())
-
     # over (<name>, <RPC-method or module object>) pairs:
     def all_items(self, full_name='', get_relative_names=False, deep=False):
 
@@ -718,40 +684,6 @@ class RPCTree(Mapping):
             prefix = ('' if get_relative_names else full_name)
             return self._iter_prefixed_items(prefix,
                                              rpc_module.loc_names2all())
-
-    def method_items(self, full_name='', get_relative_names=False, deep=False):
-
-        """Iterator over (name, RPC-method) pairs (sorted by method name)"""
-
-        rpc_module = self._get_rpc_mod(full_name)
-        if deep:
-            # get recursively
-            return self._iter_subtree(full_name, rpc_module,
-                                      get_relative_names,
-                                      get_names_only=False,
-                                      include_methods=True,
-                                      include_submods=False)
-        else:
-            prefix = ('' if get_relative_names else full_name)
-            return self._iter_prefixed_items(prefix,
-                                             rpc_module.loc_names2methods())
-
-    def submod_items(self, full_name='', get_relative_names=False, deep=False):
-
-        """Iterator over (name, RPC-submodule) pairs (sorted by submodule name)"""
-
-        rpc_module = self._get_rpc_mod(full_name)
-        if deep:
-            # get recursively
-            return self._iter_subtree(full_name, rpc_module,
-                                      get_relative_names,
-                                      get_names_only=False,
-                                      include_methods=False,
-                                      include_submods=True)
-        else:
-            prefix = ('' if get_relative_names else full_name)
-            return self._iter_prefixed_items(prefix,
-                                             rpc_module.loc_names2submods())
 
     def _iter_subtree(self, base_full_name, rpc_module,
                       get_relative_names, get_names_only,
