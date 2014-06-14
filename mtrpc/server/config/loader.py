@@ -16,6 +16,7 @@ STATE_ESCAPED_BACKSLASH = 8
 identifier_chars = set(string.ascii_letters + string.digits + '_')
 digits = set(string.digits)
 
+
 def get_path_element(path):
     """Split dotted path into head and tail
     >>> get_path_element('foo.bar.baz')
@@ -62,7 +63,7 @@ def get_path_element(path):
                 state = STATE_OPEN_INDEX
                 index = 0
             elif c == '{':
-                i = i-1
+                i -= 1
                 break
             elif c in identifier_chars:
                 key.append(c)
@@ -91,7 +92,7 @@ def get_path_element(path):
                 state = STATE_OPEN_INDEX
                 index = 0
             elif c == '{':
-                i = i-1
+                i -= 1
                 break
             else:
                 _unexpected()
@@ -115,7 +116,7 @@ def get_path_element(path):
             if c == '.':
                 break
             elif c == '{':
-                i = i-1
+                i -= 1
                 break
             else:
                 _unexpected()
@@ -123,6 +124,7 @@ def get_path_element(path):
     key = ''.join(key)
     remainder = path[i+1:]
     return key, index, remainder
+
 
 def extend_array(array, length):
     """Pad array to @length
@@ -133,6 +135,7 @@ def extend_array(array, length):
         array[x] if x < len(array) else None
         for x in range(0, length)
     ]
+
 
 def merge(parent, index, key, value):
     """Merge a value into a list or dict, returning (possibly) a new object
@@ -160,6 +163,7 @@ def merge(parent, index, key, value):
         parent[key] = value
         return parent
 
+
 def walk(path, value):
     """Walk down @path and set @value at the bottom
 
@@ -179,6 +183,7 @@ def walk(path, value):
     else:
         rem = walk(remainder, value)
         return merge(None, index, key, rem)
+
 
 def zip_arrays(a, b):
     """Recursively zip contents of two lists together
@@ -205,6 +210,7 @@ def zip_arrays(a, b):
         else:
             ret.append(zip_objects(val_a, val_b))
     return ret
+
 
 def zip_dicts(a, b):
     """Recursively zip contents of two dicts together
@@ -238,6 +244,7 @@ def zip_dicts(a, b):
         else:
             ret[key] = zip_objects(val_a, val_b)
     return ret
+
 
 def zip_objects(a, b):
     """Recursively zip contents of two objects together
@@ -273,7 +280,7 @@ def process_logical_line(props, ll):
         key, value = ll.split(':', 1)
         try:
             _value = json.loads(value)
-        except ValueError as exc:
+        except ValueError:
             try:
                 _value = json.loads(ll)
             except ValueError as exc:
@@ -285,6 +292,7 @@ def process_logical_line(props, ll):
         return zip_objects(props, new_props)
     else:
         return props
+
 
 def load_props(f, props=None):
     logical_line = ''
@@ -300,11 +308,16 @@ def load_props(f, props=None):
             logical_line = line
     return process_logical_line(props, logical_line)
 
+
+def dump_conf(path):
+    with open(path) as f:
+        props = load_props(f)
+        print repr(props)
+
+
 if __name__ == '__main__':
     import sys
     if len(sys.argv) == 1 or '--test' in sys.argv:
         doctest.testmod()
     else:
-        with open(sys.argv[1]) as f:
-            props = load_props(f)
-            print repr(props)
+        dump_conf(sys.argv[1])
