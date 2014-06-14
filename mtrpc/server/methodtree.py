@@ -525,20 +525,11 @@ class RPCTree(Mapping):
                                             method_local_name)
         assert method_full_name not in self.item_dict
 
-        rpc_module = self._get_rpc_mod(module_full_name,
-                                       arg_name='module_full_name')
+        rpc_module = self.item_dict[module_full_name]
         rpc_method = RPCMethod(callable_obj, method_full_name)
         self.method_names2pymods[method_full_name] = python_module
         rpc_module.add_method(method_local_name, rpc_method)
         self.item_dict[method_full_name] = rpc_method
-
-    def _get_rpc_mod(self, full_name, arg_name='full_name'):
-
-        rpc_module = self.item_dict[full_name]
-        if not isinstance(rpc_module, RPCModule):
-            raise TypeError("`{0}' argument must not point to anything else "
-                            "than RPCModule instance".format(arg_name))
-        return rpc_module
 
     def get_rpc_module(self, full_name, doc=u''):
 
@@ -655,7 +646,7 @@ class RPCTree(Mapping):
 
         """Iterator over sorted RPC-method/submodule names"""
 
-        rpc_module = self._get_rpc_mod(full_name)
+        rpc_module = self.item_dict[full_name]
         if deep:
             # get recursively
             return self._iter_subtree(full_name, rpc_module,
@@ -672,7 +663,7 @@ class RPCTree(Mapping):
 
         """Iterator over (name, RPC-method/submodule) pairs (sorted by name)"""
 
-        rpc_module = self._get_rpc_mod(full_name)
+        rpc_module = self.item_dict[full_name]
         if deep:
             # get recursively
             return self._iter_subtree(full_name, rpc_module,
