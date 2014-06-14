@@ -6,7 +6,6 @@
 """Python module that defines standard RPC-module 'system' with its methods"""
 
 import __builtin__
-import itertools
 
 from ..common.utils import basic_postinit
 
@@ -125,34 +124,29 @@ def _iter_signatures(module_name, deep,
                      _access_dict, _access_key_patt, _access_keyhole_patt):
     """Iterate over submodule names and method signatures"""
 
-    subitems = _iter_mod_subitems(module_name, deep,
-                                  _access_dict,
-                                  _access_key_patt,
-                                  _access_keyhole_patt)
-    signatures = (name + getattr(obj, 'formatted_arg_spec', '')
-                  for name, obj in subitems)
-    return itertools.chain([module_name], signatures)
+    yield module_name
+
+    for name, item in _iter_mod_subitems(module_name, deep,
+                                   _access_dict,
+                                   _access_key_patt,
+                                   _access_keyhole_patt):
+        yield name + getattr(item, 'formatted_arg_spec', '')
 
 
 def _iter_help_texts(name, deep,
                      _access_dict, _access_key_patt, _access_keyhole_patt):
     """Iterate over module/method help-texts"""
 
-    rpc_obj = rpc_tree.try_to_obtain(name,
-                                     _access_dict,
-                                     _access_key_patt,
-                                     _access_keyhole_patt)
+    rpc_obj = rpc_tree.try_to_obtain(name, _access_dict, _access_key_patt, _access_keyhole_patt)
 
-    if isinstance(rpc_obj, rpc_tree.RPCMethod):
-        # 1-element iterator with the help-text of the given method
-        return iter([rpc_obj.__doc__])
-    else:
-        subitems = _iter_mod_subitems(name, deep,
-                                      _access_dict,
-                                      _access_key_patt,
-                                      _access_keyhole_patt)
-        return (obj.__doc__
-                for n, obj in itertools.chain([(name, rpc_obj)], subitems))
+    yield rpc_obj.__doc__
+
+    if isinstance(rpc_obj, rpc_tree.RPCModule):
+        for name, item in _iter_mod_subitems(name, deep,
+                                       _access_dict,
+                                       _access_key_patt,
+                                       _access_keyhole_patt):
+            yield item.__doc__
 
 
 def _iter_mod_subitems(module_name, deep,
