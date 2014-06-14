@@ -465,20 +465,12 @@ class RPCTree(Mapping):
                                     .format(cur_full_name, name))
             else:
                 meth_full_name = '{0}.{1}'.format(cur_full_name, name)
+                callable_obj = getattr(cur_pymod, name)
+                # create and put into tree an RPC-method
                 try:
-                    callable_obj = getattr(cur_pymod, name)
-                except AttributeError:
-                    warnings.warn('No such method: {0} (so we skip it)'
-                                  .format(meth_full_name), LogWarning)
-                else:
-                    # create and put into tree an RPC-method
-                    try:
-                        self.add_rpc_method(cur_full_name, name,
-                                            callable_obj, cur_pymod)
-                    except DocDecodeError as exc:
-                        raise UnicodeError(exc.args[0]
-                                           .format(rpc_kind='RPC-method',
-                                                   full_name=meth_full_name))
+                    self.add_rpc_method(cur_full_name, name, callable_obj, cur_pymod)
+                except DocDecodeError as exc:
+                    raise UnicodeError(exc.args[0].format(rpc_kind='RPC-method', full_name=meth_full_name))
 
         ancestor_pymods.add(cur_pymod)
 
@@ -487,9 +479,7 @@ class RPCTree(Mapping):
                 continue
 
             if pymod in ancestor_pymods:
-                warnings.warn('Module {0} contains cyclic module reference: '
-                              '{1} (we must break that cycle)'
-                              .format(cur_full_name, mod_name), LogWarning)
+                raise ValueError('Module reference cycle {0} -> {1}'.format(cur_full_name, mod_name))
             else:
                 if cur_full_name:
                     mod_full_name = '{0}.{1}'.format(cur_full_name, mod_name)
