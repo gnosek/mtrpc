@@ -351,7 +351,6 @@ class MTRPCServerInterface(object):
     # Environment-related preparations
 
     def configure_logging(self, log_config=None):
-
         """Configure server logger and its handlers"""
 
         prev_log = self.log
@@ -384,7 +383,6 @@ class MTRPCServerInterface(object):
                 self._signal_handlers[signal_num] = handler
 
     def do_os_settings(self, force_daemon=False):
-
         """Set umask and working dir; daemonize or not; set OS signal handlers"""
 
         os_settings = self.config['os_settings']
@@ -409,7 +407,6 @@ class MTRPCServerInterface(object):
 
     #
     # OS signal handlers:
-
     def _restart_handler(self, signal_num, stack_frame, stopping_timeout):
         """"restart" action"""
         try:
@@ -457,7 +454,6 @@ class MTRPCServerInterface(object):
     # RPC-methods tree loading
 
     def load_rpc_tree(self, default_postinit_callable=utils.basic_postinit, rpc_mode='server'):
-
         """Load RPC-methods from modules specified by names or filesystem paths"""
 
         try:
@@ -523,8 +519,7 @@ class MTRPCServerInterface(object):
 
             # (use warnings framework to log any warnings with the logger)
             with warnings.catch_warnings():
-                self._set_warnings_logging_func(self.log,
-                                                warnings.showwarning)
+                self._set_warnings_logging_func(self.log, warnings.showwarning)
 
                 # creates a new RPC-tree object,
                 # walks recursively over submodules of the root module
@@ -548,13 +543,11 @@ class MTRPCServerInterface(object):
     @staticmethod
     def _set_warnings_logging_func(log, orig_showwarning):
 
-        def showwarning(message, category, filename, lineno,
-                        file=None, line=None):
+        def showwarning(message, category, filename, lineno, file=None, line=None):
             if issubclass(category, methodtree.LogWarning):
                 log.warning(message)
             else:
-                orig_showwarning(message, category, filename, lineno,
-                                 file=None, line=None)
+                orig_showwarning(message, category, filename, lineno, file=None, line=None)
 
         warnings.showwarning = showwarning
 
@@ -568,4 +561,3 @@ class MTRPCServerInterface(object):
     def stop(self, reason='manual stop', loglevel='info', force=False, timeout=30):
 
         raise NotImplementedError()
-
