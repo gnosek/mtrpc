@@ -7,7 +7,6 @@ import signal
 import sys
 import types
 import imp
-import warnings
 
 from mtrpc.common import utils
 from mtrpc.common.const import DEFAULT_LOG_HANDLER_SETTINGS, RPC_METHOD_LIST
@@ -517,21 +516,12 @@ class MTRPCServerInterface(object):
                                      'module {2!r}'
                                      .format(src_name, dst_name, name_owner))
 
-            # (use warnings framework to log any warnings with the logger)
-            with warnings.catch_warnings():
-                self._set_warnings_logging_func(self.log, warnings.showwarning)
-
-                # creates a new RPC-tree object,
-                # walks recursively over submodules of the root module
-                # to collect names and callables -- to create RPC-modules
-                # and RPC-methods and populate the tree with them
-                rpc_tree = methodtree.RPCTree()
-                rpc_tree.build(
-                    root_mod,
-                    default_postinit_callable,
-                    postinit_kwargs,
-                    rpc_mode
-                )
+            # creates a new RPC-tree object,
+            # walks recursively over submodules of the root module
+            # to collect names and callables -- to create RPC-modules
+            # and RPC-methods and populate the tree with them
+            rpc_tree = methodtree.RPCTree()
+            rpc_tree.build(root_mod, default_postinit_callable, postinit_kwargs, rpc_mode)
 
         except Exception:
             raise RuntimeError('Error when loading RPC-methods -- {0}'
@@ -539,17 +529,6 @@ class MTRPCServerInterface(object):
 
         self.rpc_tree = rpc_tree
         return rpc_tree
-
-    @staticmethod
-    def _set_warnings_logging_func(log, orig_showwarning):
-
-        def showwarning(message, category, filename, lineno, file=None, line=None):
-            if issubclass(category, methodtree.LogWarning):
-                log.warning(message)
-            else:
-                orig_showwarning(message, category, filename, lineno, file=None, line=None)
-
-        warnings.showwarning = showwarning
 
     #
     # The actual server management

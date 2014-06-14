@@ -45,10 +45,6 @@ class DocDecodeError(UnicodeError):
     """Internal exception: cannot convert RPC-module/method doc to unicode"""
 
 
-class LogWarning(UserWarning):
-    """Used to log messages using a proper logger without knowing that logger"""
-
-
 def format_help(head, body, body_indent):
     body_lines = prepare_doc(body).splitlines()
 
