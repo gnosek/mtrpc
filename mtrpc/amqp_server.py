@@ -11,10 +11,10 @@ sys.path.insert(0, '/usr/local/megiteam/python2.6')
 
 from mtrpc.server.config import loader
 
-dir, name = os.path.split(sys.argv[0])
+directory, name = os.path.split(sys.argv[0])
 
 if name.endswith("_agent"):
-    name = name[:-6] # strip _agent
+    name = name[:-6]  # strip _agent
 
 CONFIG_DIR = '/etc/megiteam/mtrpc'
 CONFIG_PATH = os.path.join(CONFIG_DIR, name + ".json")
@@ -27,6 +27,7 @@ parser.add_option('-c', '--config', dest='config', default=CONFIG_PATH, help='Pa
 
 force_daemon = o.daemon
 
+server = None
 restart_lock = threading.Lock()
 final_callback = restart_lock.release
 # (^ to restart the server when the service threads are stopped)
@@ -36,10 +37,11 @@ try:
         if restart_lock.acquire(False):   # (<- non-blocking)
             config_dict = loader.load_props(open(o.config))
             server = AmqpServer.configure_and_start(
-                    config_dict=config_dict,
-                    force_daemon=force_daemon,
-                    final_callback=final_callback,
+                config_dict=config_dict,
+                force_daemon=force_daemon,
+                final_callback=final_callback,
             )
         signal.pause()
 except KeyboardInterrupt:
-    server.stop()
+    if server is not None:
+        server.stop()
