@@ -25,15 +25,15 @@ import textwrap
 import traceback
 import warnings
 import sys
-
 from collections import defaultdict, \
     Callable, Hashable, Mapping, \
     MutableSequence, MutableSet, MutableMapping
-from repr import Repr
+from mtrpc.common import utils
 
 from mtrpc.common.const import ACC_KWARGS, ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, ACCESS_KEYHOLE_KWARG, RPC_METHOD_LIST, \
     RPC_POSTINIT, RPC_MODULE_DOC
 from mtrpc.common.errors import RPCMethodArgError, RPCNotFoundError
+
 
 
 #
@@ -103,13 +103,6 @@ def prepare_doc(doc):
         return doc
     else:
         return u'\n'.join((first_line.strip(), textwrap.dedent(rest)))
-
-
-def format_result(result):
-    r = Repr()
-    r.maxstring = 60
-    r.maxother = 60
-    return r.repr(result)
 
 
 def get_effective_signature(obj):
@@ -210,10 +203,7 @@ class RPCMethod(Callable):
 
         spec_args = [a for a in spec.args if a not in ACC_KWARGS]
         real_args[len(spec_args):] = []
-        r = Repr()
-        r.maxstring = 60
-        r.maxother = 60
-        real_args = [r.repr(a) for a in real_args]
+        real_args = [utils.log_repr(a) for a in real_args]
 
         return inspect.formatargspec(spec_args, spec.varargs,
                                      spec.keywords, real_args, formatvalue=lambda v: '=' + v)

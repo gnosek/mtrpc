@@ -1150,8 +1150,7 @@ class RPCTaskThread(threading.Thread):
                            request.method, exc_info=True)
             raise
 
-        self.log.info('%s call completed: %s',
-                      request.method, rpc_method.format_result(result))
+        self.log.info('%s call completed: %s', request.method, utils.log_repr(result))
         return result
 
     def format_exception(self):

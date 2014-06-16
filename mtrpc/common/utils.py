@@ -7,6 +7,7 @@
 
 import logging
 import logging.handlers
+from repr import Repr
 import socket
 import sys
 
@@ -123,3 +124,9 @@ def setkeepalives(sck, enabled=True, keepcnt=5, keepintvl=120, keepidle=300):
     else:
         sck.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 0)
 
+
+def log_repr(result):
+    r = Repr()
+    r.maxstring = 60
+    r.maxother = 60
+    return r.repr(result)
