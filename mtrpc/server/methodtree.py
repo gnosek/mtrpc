@@ -35,7 +35,6 @@ from mtrpc.common.const import ACC_KWARGS, ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, 
 from mtrpc.common.errors import RPCMethodArgError, RPCNotFoundError
 
 
-
 #
 # Auxiliary types
 #
