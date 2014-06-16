@@ -34,6 +34,7 @@ class AmqpServer(MTRPCServerInterface):
         self.task_dict = {}
         self.result_fifo = Queue.Queue()
         self.mutex = threading.Lock()
+        super(AmqpServer, self).__init__()
 
     @classmethod
     def validate_and_complete_config(cls, config):
