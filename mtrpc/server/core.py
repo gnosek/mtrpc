@@ -320,10 +320,12 @@ class MTRPCServerInterface(object):
 
         # verify section content types
         for section, sect_content in config.iteritems():
-            if not isinstance(sect_content, cls.CONFIG_SECTION_TYPES[section]):
+            sect_cls = cls.CONFIG_SECTION_TYPES.get(section)
+            if sect_cls is None:
+                continue
+            if not isinstance(sect_content, sect_cls):
                 raise TypeError('{0} section should be a {1.__name__}'
-                                .format(section,
-                                        cls.CONFIG_SECTION_TYPES[section]))
+                                .format(section, cls.CONFIG_SECTION_TYPES[section]))
 
         # complement omited non-obligatory sections
         for section, section_type in cls.CONFIG_SECTION_TYPES.iteritems():
