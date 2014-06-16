@@ -5,8 +5,6 @@
 
 """MTRPC common utility classes and functions"""
 
-
-
 import logging
 import logging.handlers
 import socket
@@ -14,14 +12,11 @@ import sys
 
 from .const import *
 
-
-
 #
 # Standard module post-init callable
 #
 
 def basic_postinit(mod, full_name, logging_settings, mod_globals):
-
     """Initialize the module logger and add custom globals
 
     Arguments:
@@ -45,8 +40,7 @@ def basic_postinit(mod, full_name, logging_settings, mod_globals):
                       .get(full_name, {}))
     log_name = log_config.get('mod_logger')
     if log_name is None:
-        log_name = (log_config.get('mod_logger_pattern', '')
-                                   .format(full_name=full_name))
+        log_name = (log_config.get('mod_logger_pattern', '').format(full_name=full_name))
     new_log = logging.getLogger(log_name)
     prev_log = getattr(mod, RPC_LOG, None)
     if prev_log is None:
@@ -61,13 +55,11 @@ def basic_postinit(mod, full_name, logging_settings, mod_globals):
     mod.__dict__.update(mod_globals.get(full_name, {}))
 
 
-
 #
 # Other functions
 #
 
 def configure_logging(log, prev_log, log_handlers, log_config):
-
     """Configure logging for a particular logger, using given settings.
 
     Arguments:
