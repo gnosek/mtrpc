@@ -1,3 +1,4 @@
+import ast
 import multiprocessing
 import os
 from itertools import chain
@@ -68,13 +69,22 @@ class HttpServer(MTRPCServerInterface):
             abort(404, 'RPC endpoint not found')
 
     @classmethod
+    def detect_type(cls, arg):
+        """DWIM cast guessing parameter type, not really for production use"""
+        try:
+            return ast.literal_eval(arg)
+        except ValueError:
+            return unicode(arg)
+
+    @classmethod
     def build_rpc_args(cls, args):
         out = {}
-        for k, v in args.items():
+        for k in args:
+            v = args.getlist(k)
             if len(v) == 1:
-                out[k] = v[0]
+                out[k] = cls.detect_type(v[0])
             else:
-                out[k] = v
+                out[k] = [cls.detect_type(item) for item in v]
 
         out[ACCESS_DICT_KWARG] = {}
         out[ACCESS_KEY_KWARG] = ''
@@ -85,7 +95,7 @@ class HttpServer(MTRPCServerInterface):
     @classmethod
     def call_rpc_object(cls, rpc_object, args):
         try:
-            return jsonify(response=rpc_object(**cls.build_rpc_args(args)))
+            return jsonify(response=rpc_object(**args))
         except RPCMethodArgError as exc:
             abort(400, str(exc).replace('{name}', rpc_object.full_name))
 
@@ -99,17 +109,19 @@ class HttpServer(MTRPCServerInterface):
             abort(403, 'RPC object is not callable')
         if not getattr(rpc_object, 'readonly', False):
             abort(405, 'Method not allowed')
-        return self.call_rpc_object(rpc_object, request.args)
+        args = self.build_rpc_args(request.args)
+        return self.call_rpc_object(rpc_object, args)
 
     def call(self, rpc_object_url):
         rpc_object = self.find_rpc_object(rpc_object_url)
         if not callable(rpc_object):
             abort(403, 'RPC object is not callable')
+        args = self.build_rpc_args(request.form)
         if getattr(rpc_object, 'readonly', False):
-            return self.call_rpc_object(rpc_object, request.form)
+            return self.call_rpc_object(rpc_object, args)
         if self.writer_lock.acquire(False):
             try:
-                return self.call_rpc_object(rpc_object, request.form)
+                return self.call_rpc_object(rpc_object, args)
             finally:
                 self.writer_lock.release()
         else:
