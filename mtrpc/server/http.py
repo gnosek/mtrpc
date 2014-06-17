@@ -77,6 +77,12 @@ class HttpServer(MTRPCServerInterface):
             return unicode(arg)
 
     @classmethod
+    def add_access_args(cls, args):
+        args[ACCESS_DICT_KWARG] = {}
+        args[ACCESS_KEY_KWARG] = ''
+        args[ACCESS_KEYHOLE_KWARG] = ''
+
+    @classmethod
     def build_rpc_args(cls, args):
         out = {}
         for k in args:
@@ -86,10 +92,7 @@ class HttpServer(MTRPCServerInterface):
             else:
                 out[k] = [cls.detect_type(item) for item in v]
 
-        out[ACCESS_DICT_KWARG] = {}
-        out[ACCESS_KEY_KWARG] = ''
-        out[ACCESS_KEYHOLE_KWARG] = ''
-
+        cls.add_access_args(out)
         return out
 
     @classmethod
@@ -116,7 +119,11 @@ class HttpServer(MTRPCServerInterface):
         rpc_object = self.find_rpc_object(rpc_object_url)
         if not callable(rpc_object):
             abort(403, 'RPC object is not callable')
-        args = self.build_rpc_args(request.form)
+        args = request.get_json()
+        if args is None:
+            args = self.build_rpc_args(request.form)
+        else:
+            self.add_access_args(args)
         if getattr(rpc_object, 'readonly', False):
             return self.call_rpc_object(rpc_object, args)
         if self.writer_lock.acquire(False):
