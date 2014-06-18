@@ -71,6 +71,8 @@ class HttpServer(MTRPCServerInterface):
     @classmethod
     def detect_type(cls, arg):
         """DWIM cast guessing parameter type, not really for production use"""
+        if not arg:
+            return u''
         try:
             return ast.literal_eval(arg)
         except ValueError:
