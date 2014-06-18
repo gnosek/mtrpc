@@ -54,6 +54,7 @@ class HttpServer(MTRPCServerInterface):
         http={
             'bind': '127.0.0.1:5000',
             'debug': False,
+            'root_token': None,
         }
     )
 
@@ -104,6 +105,19 @@ class HttpServer(MTRPCServerInterface):
         except RPCMethodArgError as exc:
             abort(400, str(exc).replace('{name}', rpc_object.full_name))
 
+    def authenticate(self, rpc_object):
+        if rpc_object.gets_access_dict:
+            return  # the method will do its own authn/authz
+        root_token = self.config['http'].get('root_token')
+        if root_token is None:
+            if self.config['http'].get('debug'):
+                return
+        else:
+            request_token = request.headers.get('X-Auth-Token')
+            if request_token == root_token:
+                return
+        abort(403, 'Access denied')
+
     def get_help(self, rpc_object_url):
         rpc_object = self.find_rpc_object(rpc_object_url)
         return Response(rpc_object.__doc__, content_type='text/plain')
@@ -112,6 +126,7 @@ class HttpServer(MTRPCServerInterface):
         rpc_object = self.find_rpc_object(rpc_object_url)
         if not callable(rpc_object):
             abort(403, 'RPC object is not callable')
+        self.authenticate(rpc_object)
         if not getattr(rpc_object, 'readonly', False):
             abort(405, 'Method not allowed')
         args = self.build_rpc_args(request.args)
@@ -121,6 +136,7 @@ class HttpServer(MTRPCServerInterface):
         rpc_object = self.find_rpc_object(rpc_object_url)
         if not callable(rpc_object):
             abort(403, 'RPC object is not callable')
+        self.authenticate(rpc_object)
         args = request.get_json()
         if args is None:
             args = self.build_rpc_args(request.form)

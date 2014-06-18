@@ -176,7 +176,7 @@ class RPCMethod(Callable):
 
     def _test_argspec(self, spec):
         # set attrs informing about special access-related arguments
-        self._gets_access_dict = ACCESS_DICT_KWARG in spec.args
+        self.gets_access_dict = ACCESS_DICT_KWARG in spec.args
         self._gets_access_key = ACCESS_KEY_KWARG in spec.args
         self._gets_access_keyhole = ACCESS_KEYHOLE_KWARG in spec.args
         # create argument testing callable object:
@@ -210,7 +210,7 @@ class RPCMethod(Callable):
     def __call__(self, *args, **kw):
         """Call the method"""
 
-        if not self._gets_access_dict:
+        if not self.gets_access_dict:
             kw.pop(ACCESS_DICT_KWARG, None)
 
         if not self._gets_access_key:
