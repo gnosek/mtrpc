@@ -8,10 +8,10 @@ import sys
 import types
 import imp
 import warnings
+
 from mtrpc.common import utils
 from mtrpc.common.const import DEFAULT_LOG_HANDLER_SETTINGS, RPC_METHOD_LIST
 from mtrpc.server import methodtree, daemonize
-
 
 
 class MTRPCServerInterface(object):
@@ -178,7 +178,6 @@ class MTRPCServerInterface(object):
     _instance = None
     _server_iface_rlock = threading.RLock()
 
-
     def __init__(self):
 
         """Attention: MTRPCServerInterface is a singleton class.
@@ -216,16 +215,14 @@ class MTRPCServerInterface(object):
         # the RPC-tree -- to be set in load_rpc_tree()
         self.rpc_tree = None
 
-
     @classmethod
     def get_instance(cls):
-        "Get (the only) class instance; create it if it does not exist yet"
+        """Get (the only) class instance; create it if it does not exist yet"""
         with cls._server_iface_rlock:
             if cls._instance is None:
                 return cls()
             else:
                 return cls._instance
-
 
     @classmethod
     def configure(cls, config_dict=None,
@@ -262,7 +259,6 @@ class MTRPCServerInterface(object):
         else:
             return self
 
-
     @classmethod
     def configure_and_start(cls, config_dict=None,
                             force_daemon=False,
@@ -294,12 +290,10 @@ class MTRPCServerInterface(object):
 
         return self
 
-
-    # it is usefuf as final_callback in loop mode
+    # it is useful as final_callback in loop mode
     @classmethod
     def restart_on(cls):
         cls._instance._restart = True
-
 
     @classmethod
     def validate_and_complete_config(cls, config):
@@ -353,13 +347,12 @@ class MTRPCServerInterface(object):
                                  " {0!r}: {1!r}".format(field, value))
         return config
 
-
     #
     # Environment-related preparations
 
     def configure_logging(self, log_config=None):
 
-        "Configure server logger and its handlers"
+        """Configure server logger and its handlers"""
 
         prev_log = self.log
         if log_config is None:
@@ -372,7 +365,6 @@ class MTRPCServerInterface(object):
         utils.configure_logging(self.log, prev_log, self._log_handlers,
                                 log_config)
         return self.log
-
 
     def setup_signal_handlers(self, signal_actions, sig_stopping_timeout):
         # unregister old signal handlers (when restarting)
@@ -393,7 +385,7 @@ class MTRPCServerInterface(object):
 
     def do_os_settings(self, force_daemon=False):
 
-        "Set umask and working dir; daemonize or not; set OS signal handlers"
+        """Set umask and working dir; daemonize or not; set OS signal handlers"""
 
         os_settings = self.config['os_settings']
 
@@ -415,12 +407,11 @@ class MTRPCServerInterface(object):
         sig_stopping_timeout = os_settings.get('sig_stopping_timeout', 60)
         self.setup_signal_handlers(signal_actions, sig_stopping_timeout)
 
-
     #
     # OS signal handlers:
 
     def _restart_handler(self, signal_num, stack_frame, stopping_timeout):
-        '"restart" action'
+        """"restart" action"""
         try:
             self.log.info('Signal #%s received by the process -- '
                           '"restart" action starts...', signal_num)
@@ -434,7 +425,7 @@ class MTRPCServerInterface(object):
     _reload_handler = _restart_handler
 
     def _exit_handler(self, signal_num, stack_frame, stopping_timeout):
-        '"exit" action'
+        """"exit" action"""
         try:
             self.log.info('Signal #%s received by the process -- '
                           '"exit" action starts...', signal_num)
@@ -448,7 +439,7 @@ class MTRPCServerInterface(object):
             raise
 
     def _force_exit_handler(self, signal_num, stack_frame, stopping_timeout):
-        '"force_exit" action'
+        """"force_exit" action"""
         try:
             self.log.info('Signal #%s received by the process -- '
                           '"force_exit" action starts...', signal_num)
@@ -462,13 +453,12 @@ class MTRPCServerInterface(object):
                               'exception...', exc_info=True)
             raise
 
-
     #
     # RPC-methods tree loading
 
     def load_rpc_tree(self, default_postinit_callable=utils.basic_postinit, rpc_mode='server'):
 
-        "Load RPC-methods from modules specified by names or filesystem paths"
+        """Load RPC-methods from modules specified by names or filesystem paths"""
 
         try:
             rpc_tree_init_conf = self.config.get('rpc_tree_init', {})
@@ -555,7 +545,6 @@ class MTRPCServerInterface(object):
         self.rpc_tree = rpc_tree
         return rpc_tree
 
-
     @staticmethod
     def _set_warnings_logging_func(log, orig_showwarning):
 
@@ -568,7 +557,6 @@ class MTRPCServerInterface(object):
                                  file=None, line=None)
 
         warnings.showwarning = showwarning
-
 
     #
     # The actual server management
