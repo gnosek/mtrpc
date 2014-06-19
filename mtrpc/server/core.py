@@ -222,7 +222,6 @@ class MTRPCServerInterface(object):
 
     @classmethod
     def configure(cls, config_dict=None,
-                  force_daemon=False,
                   default_postinit_callable=utils.basic_postinit):
 
         """Get the instance, load config + configure (don't start) the server.
@@ -230,9 +229,6 @@ class MTRPCServerInterface(object):
         Obligatory argument:  config_dict -- parsed config
 
         Optional arguments:
-
-        * force_daemon (bool) -- if True => always daemonize the OS process
-          (ignore the 'os_settings'->'daemon' field), default: False;
 
         * default_postinit_callable (callable object) -- to be passed to
           methodtree.RPCTree.build_new(); default: common.utils.basic_postinit.
@@ -245,13 +241,12 @@ class MTRPCServerInterface(object):
         self = cls.get_instance()
         self.config = self.validate_and_complete_config(config_dict)
         self.configure_logging()
-        self.do_os_settings(force_daemon=force_daemon)
+        self.do_os_settings()
         self.rpc_tree = self.load_rpc_tree(default_postinit_callable=default_postinit_callable, rpc_mode=self.RPC_MODE)
         return self
 
     @classmethod
     def configure_and_start(cls, config_dict=None,
-                            force_daemon=False,
                             default_postinit_callable=utils.basic_postinit,
                             final_callback=None):
 
@@ -261,7 +256,6 @@ class MTRPCServerInterface(object):
 
         Optional arguments:
 
-        * force_daemon
         * default_postinit_callable
         -- see: configure();
 
@@ -270,7 +264,7 @@ class MTRPCServerInterface(object):
 
         """
 
-        self = cls.configure(config_dict, force_daemon, default_postinit_callable)
+        self = cls.configure(config_dict, default_postinit_callable)
         try:
             self.start(final_callback=final_callback)
         except Exception:
@@ -372,17 +366,10 @@ class MTRPCServerInterface(object):
                 signal.signal(signal_num, handler)
                 self._signal_handlers[signal_num] = handler
 
-    def do_os_settings(self, force_daemon=False):
+    def do_os_settings(self):
         """Set umask and working dir; daemonize or not; set OS signal handlers"""
 
         os_settings = self.config['os_settings']
-
-        umask = os_settings.get('umask')
-
-        if (os_settings.get('daemon') or force_daemon) and not self.daemonized:
-            # daemonize:
-            daemonize.daemonize(umask=umask, workdir=os.getcwd())
-            self.daemonized = True
 
         signal_actions = os_settings.get('signal_actions',
                                          dict(SIGTERM='exit',

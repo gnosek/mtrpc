@@ -561,6 +561,9 @@ def config_file(config_path):
 
 
 def run_amqp_server(config_paths, daemon=False, pidfile_path=None):
+    if daemon:
+        daemonize.daemonize()
+
     restart_lock = threading.Lock()
     final_callback = restart_lock.release
     server = None
@@ -574,9 +577,8 @@ def run_amqp_server(config_paths, daemon=False, pidfile_path=None):
                     fp = config_file(p)
                     config_dict = loader.load_props(fp, config_dict)
                 server = AmqpServer.configure_and_start(
-                        config_dict=config_dict,
-                        force_daemon=daemon,
-                        final_callback=final_callback,
+                    config_dict=config_dict,
+                    final_callback=final_callback,
                 )
                 if daemon and pidfile_path:
                     with open(pidfile_path, 'w') as f:

@@ -5,6 +5,7 @@ import threading
 import signal
 import os
 from optparse import OptionParser
+from mtrpc.server import daemonize
 from mtrpc.server.amqp import AmqpServer
 
 sys.path.insert(0, '/usr/local/megiteam/python2.6')
@@ -25,12 +26,14 @@ parser.add_option('-c', '--config', dest='config', default=CONFIG_PATH, help='Pa
 
 (o, a) = parser.parse_args(sys.argv[1:])
 
-force_daemon = o.daemon
-
 server = None
 restart_lock = threading.Lock()
 final_callback = restart_lock.release
 # (^ to restart the server when the service threads are stopped)
+
+if o.daemon:
+    daemonize.daemonize()
+
 try:
     # no inner server loop needed, we have the outer one here
     while True:
@@ -38,7 +41,6 @@ try:
             config_dict = loader.load_props(open(o.config))
             server = AmqpServer.configure_and_start(
                 config_dict=config_dict,
-                force_daemon=force_daemon,
                 final_callback=final_callback,
             )
         signal.pause()
