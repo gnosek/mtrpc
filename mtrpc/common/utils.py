@@ -10,12 +10,12 @@ import logging.handlers
 from repr import Repr
 import socket
 import sys
-
-from .const import *
+from mtrpc.common.const import RPC_LOG, RPC_LOG_HANDLERS, DEFAULT_LOG_HANDLER_SETTINGS
 
 #
 # Standard module post-init callable
 #
+
 
 def basic_postinit(mod, full_name, logging_settings, mod_globals):
     """Initialize the module logger and add custom globals
@@ -94,20 +94,20 @@ def configure_logging(log, prev_log, log_handlers, log_config):
             package, class_name = class_name.rsplit('.', 1)
             __import__(package)
             handler_package = sys.modules[package]
-            HandlerClass = getattr(handler_package, class_name)
+            handler_class = getattr(handler_package, class_name)
         else:
             try:
-                HandlerClass = getattr(logging, class_name)
+                handler_class = getattr(logging, class_name)
             except AttributeError:
-                HandlerClass = getattr(logging.handlers, class_name)
+                handler_class = getattr(logging.handlers, class_name)
 
         kwargs = handler_props.get('kwargs', default_hprops['kwargs'])
         level = handler_props.get('level', default_hprops['level']).upper()
-        format = handler_props.get('format', default_hprops['format'])
+        fmt = handler_props.get('format', default_hprops['format'])
 
-        handler = HandlerClass(**kwargs)
+        handler = handler_class(**kwargs)
         handler.setLevel(getattr(logging, level))
-        handler.setFormatter(logging.Formatter(format))
+        handler.setFormatter(logging.Formatter(fmt))
 
         log_handlers.append(handler)
         log.addHandler(handler)
