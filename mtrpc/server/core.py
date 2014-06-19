@@ -484,7 +484,7 @@ class MTRPCServerInterface(object):
                     setattr(root_mod, dst_name, module)
                     root_method_list.append(dst_name)
                 else:
-                    self.log.warning('Cannot load module from path "{0}" as '
+                    raise ValueError('Cannot load module from path "{0}" as '
                                      '"{1}" -- because "{1}" name is already '
                                      'used by module {2!r}'
                                      .format(file_path, dst_name, name_owner))
@@ -511,7 +511,7 @@ class MTRPCServerInterface(object):
                     setattr(root_mod, dst_name, module)
                     root_method_list.append(dst_name)
                 else:
-                    self.log.warning('Cannot import module "{0}" as "{1}" -- '
+                    raise ValueError('Cannot import module "{0}" as "{1}" -- '
                                      'because "{1}" name is already used by '
                                      'module {2!r}'
                                      .format(src_name, dst_name, name_owner))
