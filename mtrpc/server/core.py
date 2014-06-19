@@ -105,20 +105,6 @@ class MTRPCServerInterface(object):
     """
 
     CONFIG_DEFAULTS = {
-        'rpc_tree_init': {
-            'paths': [],
-            'imports': ['mtrpc.server.sysmethods as system'],
-            'postinit_kwargs': {
-                'logging_settings': {
-                    'mod_logger_pattern': 'mtrpc.server.rpc_log.{full_name}',
-                    'level': 'warning',
-                    'handlers': [DEFAULT_LOG_HANDLER_SETTINGS],
-                    'propagate': False,
-                    'custom_mod_loggers': {}
-                },
-                'mod_globals': {}
-            }
-        },
         'logging_settings': {
             'server_logger': 'mtrpc.server.rpc_log',
             'level': 'info',

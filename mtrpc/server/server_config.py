@@ -4,6 +4,7 @@ import pkg_resources
 from jsonschema import validators, Draft4Validator
 
 from mtrpc.server.config import loader
+from mtrpc.server.methodtree import RPCTree
 
 
 def extend_with_default(validator_class):
@@ -52,13 +53,14 @@ def load_config(config_path):
 
 class ServerConfig(object):
 
-    def __init__(self, config_paths, server_class):
+    def __init__(self, config_paths, server_class, rpc_tree_class=RPCTree):
         config_dict = {}
         for p in config_paths:
             fp = load_config(p)
             config_dict = loader.load_props(fp, config_dict)
         self.config_dict = config_dict
         self.server_class = server_class
+        self.rpc_tree_class = rpc_tree_class
         self.server = None
 
     def validate_config(self, cls):
@@ -68,6 +70,7 @@ class ServerConfig(object):
                 validator.validate(self.config_dict)
 
     def validate(self):
+        self.validate_config(self.rpc_tree_class)
         self.validate_config(self.server_class)
 
     def run(self, final_callback=None):

@@ -33,8 +33,9 @@ from mtrpc.common import utils
 from collections import defaultdict, Callable, Mapping
 
 from mtrpc.common.const import ACC_KWARGS, ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, ACCESS_KEYHOLE_KWARG, RPC_METHOD_LIST, \
-    RPC_POSTINIT, RPC_MODULE_DOC
+    RPC_POSTINIT, RPC_MODULE_DOC, DEFAULT_LOG_HANDLER_SETTINGS
 from mtrpc.common.errors import RPCMethodArgError, RPCNotFoundError
+from mtrpc.server import schema
 
 
 #
@@ -332,6 +333,25 @@ class RPCTree(Mapping):
 
     RPCMethod = RPCMethod
     RPCModule = RPCModule
+
+    CONFIG_DEFAULTS = {
+        'rpc_tree_init': {
+            'paths': [],
+            'imports': ['mtrpc.server.sysmethods as system'],
+            'postinit_kwargs': {
+                'logging_settings': {
+                    'mod_logger_pattern': 'mtrpc.server.rpc_log.{full_name}',
+                    'level': 'warning',
+                    'handlers': [DEFAULT_LOG_HANDLER_SETTINGS],
+                    'propagate': False,
+                    'custom_mod_loggers': {}
+                },
+                'mod_globals': {}
+            }
+        }
+    }
+
+    CONFIG_SCHEMAS = [schema.by_example(CONFIG_DEFAULTS)]
 
     @classmethod
     def load(cls, imports, paths, postinit_kwargs, rpc_mode):
