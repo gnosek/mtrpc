@@ -491,93 +491,11 @@ For information about AMQP routing keys, exchange and queue names etc.
 
 """
 
-import json
-import os
-import os.path
-import signal
-import threading
-
-import pkg_resources
-
-from . import threads
-from . import methodtree
 from . import daemonize
-from .config import loader
 from mtrpc.server.amqp import AmqpServer
 from mtrpc.server.cli import MtrpcCli
 from mtrpc.server.http import HttpServer
-
-
-def config_file(config_path):
-    if config_path.startswith('/'):
-        return open(config_path)
-
-    if '=' in config_path:
-        key, value = config_path.split('=', 1)
-        key = key.strip()
-        value = value.strip()
-        try:
-            json.loads(value)
-        except ValueError:
-            value = json.dumps(value)
-        # convert key=value to key: value
-        # key:value syntax is already taken by package loader
-        return ['{key}: {value}'.format(key=key, value=value)]
-
-    if ':' in config_path:
-        package, relative_path = config_path.split(':', 1)
-
-        resource_manager = pkg_resources.ResourceManager()
-        provider = pkg_resources.get_provider(package)
-
-        return provider.get_resource_stream(resource_manager, relative_path)
-
-    return open(config_path)
-
-
-def run_amqp_server(config_paths, daemon=False, pidfile_path=None):
-    if daemon:
-        daemonize.daemonize()
-
-    restart_lock = threading.Lock()
-    final_callback = restart_lock.release
-    server = None
-    # (^ to restart the server when the service threads are stopped)
-    try:
-        # no inner server loop needed, we have the outer one here
-        while True:
-            if restart_lock.acquire(False):   # (<- non-blocking)
-                config_dict = dict()
-                for p in config_paths:
-                    fp = config_file(p)
-                    config_dict = loader.load_props(fp, config_dict)
-                server = AmqpServer.configure_and_start(
-                    config_dict=config_dict,
-                    final_callback=final_callback,
-                )
-                if daemon and pidfile_path:
-                    with open(pidfile_path, 'w') as f:
-                        print >>f, os.getpid()
-            signal.pause()
-    except KeyboardInterrupt:
-        if server:
-            server.stop()
-
-
-def run_http_server(config_paths):
-    config_dict = dict()
-    for p in config_paths:
-        fp = config_file(p)
-        config_dict = loader.load_props(fp, config_dict)
-    HttpServer.configure_and_start(config_dict=config_dict)
-
-
-def run_cli(config_paths):
-    config_dict = dict()
-    for p in config_paths:
-        fp = config_file(p)
-        config_dict = loader.load_props(fp, config_dict)
-    MtrpcCli.configure_and_start(config_dict=config_dict)
+from mtrpc.server.server_config import ServerConfig
 
 
 def main():
@@ -585,17 +503,19 @@ def main():
     parser = OptionParser(usage='%prog [options] config_file...')
     parser.add_option('-d', '--daemon', dest='daemon', action='store_true', default=False, help='daemonize')
     parser.add_option('-p', '--pidfile', dest='pidfile', action='store', default=None, help='write pid to file')
-    parser.add_option('-c', '--cli', dest='cli', action='store_true', default=False, help='run CLI')
-    parser.add_option('-H', '--http', dest='http', action='store_true', default=False, help='run HTTP backend')
+    parser.add_option('-c', '--cli', dest='server_class', action='store_const', const=MtrpcCli, default=AmqpServer,
+                      help='run CLI')
+    parser.add_option('-H', '--http', dest='server_class', action='store_const', const=HttpServer,
+                      help='run HTTP backend')
 
     (o, a) = parser.parse_args()
 
-    if o.cli:
-        run_cli(a)
-    elif o.http:
-        run_http_server(a)
-    else:
-        run_amqp_server(a, o.daemon, o.pidfile)
+    server = ServerConfig(a, o.server_class)
+
+    if o.daemon and o.server_class is not MtrpcCli:
+        daemonize.daemonize()
+
+    server.run()
 
 if __name__ == '__main__':
     main()
