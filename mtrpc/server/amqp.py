@@ -119,7 +119,7 @@ class AmqpServer(MTRPCServerInterface):
         return self.manager
 
     def stop(self, reason='manual stop', loglevel='info', force=False,
-             timeout=30):
+             timeout=MTRPCServerInterface.SIGNAL_STOP_TIMEOUT):
 
         """Request the manager to stop the responder and then to stop itself.
 
