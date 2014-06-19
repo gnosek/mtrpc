@@ -386,7 +386,7 @@ class MTRPCServerInterface(object):
             # daemonize:
             daemonize.UMASK = umask
             daemonize.WORKDIR = os.getcwd()
-            daemonize.createDaemon()
+            daemonize.daemonize()
             self.daemonized = True
 
         signal_actions = os_settings.get('signal_actions',
