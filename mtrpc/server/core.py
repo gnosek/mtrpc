@@ -188,7 +188,7 @@ class MTRPCServerInterface(object):
         self = cls.get_instance()
         self.config = self.validate_and_complete_config(config_dict)
         self.configure_logging()
-        self.rpc_tree = self.load_rpc_tree(default_postinit_callable=utils.basic_postinit, rpc_mode=self.RPC_MODE)
+        self.rpc_tree = self.load_rpc_tree(rpc_mode=self.RPC_MODE)
         return self
 
     @classmethod
@@ -233,7 +233,7 @@ class MTRPCServerInterface(object):
     #
     # RPC-methods tree loading
 
-    def load_rpc_tree(self, default_postinit_callable=utils.basic_postinit, rpc_mode='server'):
+    def load_rpc_tree(self, rpc_mode='server'):
         """Load RPC-methods from modules specified by names or filesystem paths"""
 
         rpc_tree_init_conf = self.config.get('rpc_tree_init', {})
@@ -242,7 +242,7 @@ class MTRPCServerInterface(object):
         imports = rpc_tree_init_conf.get('imports', [])
         postinit_kwargs = rpc_tree_init_conf.get('postinit_kwargs', {})
 
-        return methodtree.RPCTree.load(imports, paths, default_postinit_callable, postinit_kwargs, rpc_mode)
+        return methodtree.RPCTree.load(imports, paths, postinit_kwargs, rpc_mode)
 
     #
     # The actual server management

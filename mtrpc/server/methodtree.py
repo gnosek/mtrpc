@@ -334,7 +334,7 @@ class RPCTree(Mapping):
     RPCModule = RPCModule
 
     @classmethod
-    def load(cls, imports, paths, default_postinit_callable, postinit_kwargs, rpc_mode):
+    def load(cls, imports, paths, postinit_kwargs, rpc_mode):
         root_mod = types.ModuleType('_MTRPC_ROOT_MODULE_')
         root_method_list = []
         setattr(root_mod, RPC_METHOD_LIST, root_method_list)
@@ -388,7 +388,7 @@ class RPCTree(Mapping):
                                  'module {2!r}'
                                  .format(src_name, dst_name, name_owner))
 
-        return cls(root_mod, default_postinit_callable, postinit_kwargs, rpc_mode)
+        return cls(root_mod, utils.basic_postinit, postinit_kwargs, rpc_mode)
 
     def __init__(self,
                  root_pymod=None,

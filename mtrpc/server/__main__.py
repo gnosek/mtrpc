@@ -294,7 +294,7 @@ Defining and using RPC-modules and RPC-methods
 
 MTRPCServerInterface.load_rpc_tree() method takes one argument:
 
-* default_postinit_callable.
+* rpc_mode
 
 First, the Python modules specified in `paths' and `imports' are imported
 (together with any submodules imported by them and their submodules...).
@@ -335,10 +335,9 @@ with the paths/imports-specified modules) in the following way:
 
 3. So called **post-init mechanism** is applied:
 
-   __rpc_postinit__ -- or, in case of lack of it, the callable object
-   referred by `default_postinit_callable' (see above) -- is being called
-   with those of the following keyword arguments that its signature
-   contains:
+   __rpc_postinit__ -- or, in case of lack of it, utils.basic_postinit --
+   is being called with those of the following keyword arguments that its
+   signature contains:
 
    * mod -- the Python module,
    * full_name -- the RPC-module full name,
