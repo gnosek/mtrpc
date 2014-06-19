@@ -2,7 +2,6 @@ import functools
 import logging
 import os
 import threading
-import traceback
 import signal
 import sys
 import types
@@ -250,7 +249,8 @@ class MTRPCServerInterface(object):
             self.config = self.validate_and_complete_config(config_dict)
             self.configure_logging()
             self.do_os_settings(force_daemon=force_daemon)
-            self.load_rpc_tree(default_postinit_callable=default_postinit_callable, rpc_mode=self.RPC_MODE)
+            self.rpc_tree = self.load_rpc_tree(default_postinit_callable=default_postinit_callable,
+                                               rpc_mode=self.RPC_MODE)
         except Exception:
             logging.critical('Error during server configuration. '
                              'Raising exception...', exc_info=True)
@@ -517,21 +517,13 @@ class MTRPCServerInterface(object):
     def load_rpc_tree(self, default_postinit_callable=utils.basic_postinit, rpc_mode='server'):
         """Load RPC-methods from modules specified by names or filesystem paths"""
 
-        try:
-            rpc_tree_init_conf = self.config.get('rpc_tree_init', {})
+        rpc_tree_init_conf = self.config.get('rpc_tree_init', {})
 
-            paths = rpc_tree_init_conf.get('paths', [])
-            imports = rpc_tree_init_conf.get('imports', [])
-            postinit_kwargs = rpc_tree_init_conf.get('postinit_kwargs', {})
+        paths = rpc_tree_init_conf.get('paths', [])
+        imports = rpc_tree_init_conf.get('imports', [])
+        postinit_kwargs = rpc_tree_init_conf.get('postinit_kwargs', {})
 
-            rpc_tree = self._load_rpc_tree(imports, paths, default_postinit_callable, postinit_kwargs, rpc_mode)
-
-        except Exception:
-            raise RuntimeError('Error when loading RPC-methods -- {0}'
-                               .format(traceback.format_exc()))
-
-        self.rpc_tree = rpc_tree
-        return rpc_tree
+        return self._load_rpc_tree(imports, paths, default_postinit_callable, postinit_kwargs, rpc_mode)
 
     #
     # The actual server management
