@@ -153,7 +153,5 @@ class AmqpServer(MTRPCServerInterface):
 
         return stopped
 
-    # it is useful as final_callback in loop mode
-    @classmethod
-    def restart_on(cls):
-        cls._instance._restart = True
+    def restart_on(self):
+        self._restart = True

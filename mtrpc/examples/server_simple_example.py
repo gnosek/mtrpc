@@ -15,7 +15,7 @@ try:
     # no inner server loop needed, we have the outer one here
     while True:
         server = ServerConfig(['server_simple_example_conf.json'], AmqpServer)
-        server.run(final_callback=AmqpServer.restart_on)
+        server.run(final_callback=server.server.restart_on)
         signal.pause()
 except KeyboardInterrupt:
     if server is not None:
