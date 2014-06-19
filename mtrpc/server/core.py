@@ -1,13 +1,12 @@
 import functools
 import logging
-import os
 import threading
 import signal
 import sys
 
 from mtrpc.common import utils
 from mtrpc.common.const import DEFAULT_LOG_HANDLER_SETTINGS
-from mtrpc.server import methodtree, daemonize
+from mtrpc.server import methodtree
 
 
 class MTRPCServerInterface(object):
