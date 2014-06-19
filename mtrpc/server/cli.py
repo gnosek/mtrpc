@@ -16,8 +16,3 @@ class MtrpcCli(MTRPCServerInterface):
         readline.parse_and_bind("tab:complete")
 
         code.interact(local=params)
-
-
-if __name__ == '__main__':
-    cli = MtrpcCli()
-    cli.configure_and_start({})

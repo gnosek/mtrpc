@@ -169,7 +169,3 @@ class HttpServer(MTRPCServerInterface):
         else:
             app = ConfigurableApplication(flask_app, bind=http_bind)
             app.run()
-
-
-if __name__ == '__main__':
-    HttpServer.configure_and_start({})

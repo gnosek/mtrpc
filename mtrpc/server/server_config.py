@@ -39,6 +39,11 @@ class ServerConfig(object):
             config_dict = loader.load_props(fp, config_dict)
         self.config_dict = config_dict
         self.server_class = server_class
+        self.server = None
 
     def run(self, final_callback=None):
-        self.server_class.configure_and_start(self.config_dict, final_callback)
+        self.server = self.server_class.configure_and_start(self.config_dict, final_callback)
+
+    def stop(self):
+        if hasattr(self.server, 'stop'):
+            self.server.stop()

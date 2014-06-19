@@ -5,12 +5,13 @@ import threading
 import signal
 import os
 from optparse import OptionParser
-from mtrpc.server import daemonize
-from mtrpc.server.amqp import AmqpServer
 
 sys.path.insert(0, '/usr/local/megiteam/python2.6')
 
-from mtrpc.server.config import loader
+from mtrpc.server import daemonize
+from mtrpc.server.amqp import AmqpServer
+from mtrpc.server.server_config import ServerConfig
+
 
 directory, name = os.path.split(sys.argv[0])
 
@@ -38,11 +39,8 @@ try:
     # no inner server loop needed, we have the outer one here
     while True:
         if restart_lock.acquire(False):   # (<- non-blocking)
-            config_dict = loader.load_props(open(o.config))
-            server = AmqpServer.configure_and_start(
-                config_dict=config_dict,
-                final_callback=final_callback,
-            )
+            server = ServerConfig([o.config], AmqpServer)
+            server.run(final_callback=final_callback)
         signal.pause()
 except KeyboardInterrupt:
     if server is not None:
