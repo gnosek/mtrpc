@@ -30,13 +30,6 @@ __version__ = "0.2"
 import os  # Miscellaneous OS interfaces.
 import sys  # System-specific parameters and functions.
 
-# Default daemon parameters.
-# File mode creation mask of the daemon.
-UMASK = 0
-
-# Default working directory for the daemon.
-WORKDIR = "/"
-
 # Default maximum for the number of available file descriptors.
 MAXFD = 1024
 
@@ -47,7 +40,7 @@ else:
     REDIRECT_TO = "/dev/null"
 
 
-def daemonize():
+def daemonize(umask=0, workdir='/'):
     """Detach a process from the controlling terminal and run it in the
     background as a daemon.
     """
@@ -109,10 +102,10 @@ def daemonize():
             # Since the current working directory may be a mounted filesystem, we
             # avoid the issue of not being able to unmount the filesystem at
             # shutdown time by changing it to the root directory.
-            os.chdir(WORKDIR)
+            os.chdir(workdir)
             # We probably don't want the file mode creation mask inherited from
             # the parent, so we give the child complete control over permissions.
-            os.umask(UMASK)
+            os.umask(umask)
         else:
             # exit() or _exit()?  See below.
             os._exit(0)  # Exit parent (the first child) of the second child.

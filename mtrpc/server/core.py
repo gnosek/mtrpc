@@ -384,9 +384,7 @@ class MTRPCServerInterface(object):
 
         if (os_settings.get('daemon') or force_daemon) and not self.daemonized:
             # daemonize:
-            daemonize.UMASK = umask
-            daemonize.WORKDIR = os.getcwd()
-            daemonize.daemonize()
+            daemonize.daemonize(umask=umask, workdir=os.getcwd())
             self.daemonized = True
 
         signal_actions = os_settings.get('signal_actions',
