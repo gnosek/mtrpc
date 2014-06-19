@@ -21,7 +21,7 @@ class AmqpServer(MTRPCServerInterface):
         },
         'required': ['amqp_params', 'bindings']
     }
-    CONFIG_SCHEMAS = MTRPCServerInterface.CONFIG_SCHEMAS +[CONFIG_SCHEMA]
+    CONFIG_SCHEMAS = MTRPCServerInterface.CONFIG_SCHEMAS + [CONFIG_SCHEMA]
 
     RPC_MODE = 'server'
 
