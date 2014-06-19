@@ -186,49 +186,33 @@ class MTRPCServerInterface(object):
                 return cls._instance
 
     @classmethod
-    def configure(cls, config_dict=None,
-                  default_postinit_callable=utils.basic_postinit):
+    def configure(cls, config_dict=None):
 
         """Get the instance, load config + configure (don't start) the server.
 
         Obligatory argument:  config_dict -- parsed config
-
-        Optional arguments:
-
-        * default_postinit_callable (callable object) -- to be passed to
-          methodtree.RPCTree.build_new(); default: common.utils.basic_postinit.
-
-        * rpc_mode -- either 'server' or 'cli'; not used directly in mtrpc but
-          modules may wish to differentiate, e.g. not spawn extra threads
-
         """
 
         self = cls.get_instance()
         self.config = self.validate_and_complete_config(config_dict)
         self.configure_logging()
-        self.rpc_tree = self.load_rpc_tree(default_postinit_callable=default_postinit_callable, rpc_mode=self.RPC_MODE)
+        self.rpc_tree = self.load_rpc_tree(default_postinit_callable=utils.basic_postinit, rpc_mode=self.RPC_MODE)
         return self
 
     @classmethod
-    def configure_and_start(cls, config_dict=None,
-                            default_postinit_callable=utils.basic_postinit,
-                            final_callback=None):
-
+    def configure_and_start(cls, config_dict=None, final_callback=None):
         """The same what configure() does, then run the server.
 
         Obligatory argument: config_path -- path of a config file.
 
         Optional arguments:
 
-        * default_postinit_callable
-        -- see: configure();
-
         * final_callback (callable object) -- to be called from the
           manager thread before it terminates.
 
         """
 
-        self = cls.configure(config_dict, default_postinit_callable)
+        self = cls.configure(config_dict)
         self.start(final_callback=final_callback)
         return self
 
