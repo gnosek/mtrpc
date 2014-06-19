@@ -3,7 +3,7 @@ import threading
 
 from mtrpc.common import utils
 from mtrpc.common.const import DEFAULT_LOG_HANDLER_SETTINGS
-from mtrpc.server import methodtree
+from mtrpc.server import methodtree, schema
 
 
 class MTRPCServerInterface(object):
@@ -104,39 +104,31 @@ class MTRPCServerInterface(object):
 
     """
 
-    CONFIG_SECTION_TYPES = dict(
-        rpc_tree_init=dict,
-        logging_settings=dict,
-    )
-    # allowed sections of a config file and their default content
-    CONFIG_SECTION_FIELDS = dict(
-        rpc_tree_init=dict(
-            paths=[],
-            imports=['mtrpc.server.sysmethods as system'],
-            postinit_kwargs=dict(
-                logging_settings=dict(
-                    mod_logger_pattern='mtrpc.server.rpc_log.{full_name}',
-                    level='warning',
-                    handlers=[DEFAULT_LOG_HANDLER_SETTINGS],
-                    propagate=False,
-                    custom_mod_loggers=dict(
-                        # maps RPC-module full names to logging settings dicts
-                        # with 'mod_logger' key pointing at a logger name;
-                        # omitted items will be substituted with general ones
-                    ),
-                ),
-                mod_globals=dict(
-                    # maps RPC-module full names to dicts of attributes
-                ),
-            ),
-        ),
-        logging_settings=dict(
-            server_logger='mtrpc.server',
-            level='info',
-            handlers=[DEFAULT_LOG_HANDLER_SETTINGS],
-            propagate=False
-        ),
-    )
+    CONFIG_DEFAULTS = {
+        'rpc_tree_init': {
+            'paths': [],
+            'imports': ['mtrpc.server.sysmethods as system'],
+            'postinit_kwargs': {
+                'logging_settings': {
+                    'mod_logger_pattern': 'mtrpc.server.rpc_log.{full_name}',
+                    'level': 'warning',
+                    'handlers': [DEFAULT_LOG_HANDLER_SETTINGS],
+                    'propagate': False,
+                    'custom_mod_loggers': {}
+                },
+                'mod_globals': {}
+            }
+        },
+        'logging_settings': {
+            'server_logger': 'mtrpc.server.rpc_log',
+            'level': 'info',
+            'handlers': [DEFAULT_LOG_HANDLER_SETTINGS],
+            'propagate': False,
+        }
+    }
+
+    CONFIG_SCHEMAS = [schema.by_example(CONFIG_DEFAULTS)]
+
     RPC_MODE = None
     SIGNAL_STOP_TIMEOUT = 45
 
@@ -218,54 +210,6 @@ class MTRPCServerInterface(object):
 
     @classmethod
     def validate_and_complete_config(cls, config):
-
-        """Check and supplement a given config dict.
-
-        Check item types (specified in CONFIG_SECTION_TYPES); check presence
-        of obligatory items (specified in OBLIGATORY_CONFIG_SECTIONS)
-        and complete the rest with default content (defined in
-        CONFIG_SECTION_FIELDS and CONFIG_SECTION_TYPES).
-
-        Adjust 'bindings' item -- transforming it from a list of lists into
-        a list of threads.BindingProps (namedtuple) instances.
-
-        Return the same -- but modified -- config dict.
-
-        """
-
-        # verify section content types
-        for section, sect_content in config.iteritems():
-            sect_cls = cls.CONFIG_SECTION_TYPES.get(section)
-            if sect_cls is None:
-                continue
-            if not isinstance(sect_content, sect_cls):
-                raise TypeError('{0} section should be a {1.__name__}'
-                                .format(section, cls.CONFIG_SECTION_TYPES[section]))
-
-        # complement omited non-obligatory sections
-        for section, section_type in cls.CONFIG_SECTION_TYPES.iteritems():
-            config.setdefault(section, section_type())
-
-        # verify section fields and complement them with default values
-        for section, sect_content in cls.CONFIG_SECTION_FIELDS.iteritems():
-            if sect_content is not None:
-                # verify (check for illegal fields)
-                used_fields = set(config[section])
-                if not used_fields.issubset(sect_content):
-                    bad = sorted(used_fields.difference(sect_content))
-                    raise ValueError('Illegal fields in {0} section: {1}'
-                                     .format(section, ', '.join(bad)))
-                # complement omitted fields
-                content = sect_content.copy()
-                content.update(config[section])
-                config[section] = content
-
-        # verify RPC-tree-init-related settings
-        for field, value in config['rpc_tree_init'].iteritems():
-            if not (field in ('paths', 'imports') and isinstance(value, list)
-                    or field == 'postinit_kwargs' and isinstance(value, dict)):
-                raise ValueError("Illegal item in rpc_tree_init section:"
-                                 " {0!r}: {1!r}".format(field, value))
         return config
 
     #

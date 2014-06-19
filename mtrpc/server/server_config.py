@@ -1,6 +1,26 @@
 import json
+
 import pkg_resources
+from jsonschema import validators, Draft4Validator
+
 from mtrpc.server.config import loader
+
+
+def extend_with_default(validator_class):
+    validate_properties = validator_class.VALIDATORS["properties"]
+
+    def set_defaults(validator, properties, instance, schema):
+        for error in validate_properties(validator, properties, instance, schema):
+            yield error
+
+        for prop, subschema in properties.iteritems():
+            if "default" in subschema:
+                instance.setdefault(prop, subschema["default"])
+
+    return validators.extend(validator_class, {"properties": set_defaults})
+
+
+DefaultValidatingDraft4Validator = extend_with_default(Draft4Validator)
 
 
 def load_config(config_path):
@@ -41,9 +61,26 @@ class ServerConfig(object):
         self.server_class = server_class
         self.server = None
 
+    def validate_config(self, cls):
+        if hasattr(cls, 'CONFIG_SCHEMAS'):
+            for schema in cls.CONFIG_SCHEMAS:
+                validator = DefaultValidatingDraft4Validator(schema)
+                validator.validate(self.config_dict)
+
+    def validate(self):
+        self.validate_config(self.server_class)
+
     def run(self, final_callback=None):
+        self.validate()
         self.server = self.server_class.configure_and_start(self.config_dict, final_callback)
 
     def stop(self):
         if hasattr(self.server, 'stop'):
             self.server.stop()
+
+
+if __name__ == '__main__':
+    import sys
+    from mtrpc.server.amqp import AmqpServer
+    conf = ServerConfig(sys.argv[1:], AmqpServer)
+    conf.validate()

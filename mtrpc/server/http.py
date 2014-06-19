@@ -10,6 +10,7 @@ from gunicorn.app.base import Application
 from mtrpc.common.const import ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, ACCESS_KEYHOLE_KWARG
 from mtrpc.common.errors import RPCMethodArgError
 from mtrpc.server.core import MTRPCServerInterface
+from mtrpc.server import schema
 
 
 class ConfigurableApplication(Application):
@@ -43,20 +44,18 @@ class ConfigurableApplication(Application):
 
 
 class HttpServer(MTRPCServerInterface):
-    RPC_MODE = 'server'
 
-    CONFIG_SECTION_TYPES = dict(
-        MTRPCServerInterface.CONFIG_SECTION_TYPES,
-        http=dict
-    )
-    CONFIG_SECTION_FIELDS = dict(
-        MTRPCServerInterface.CONFIG_SECTION_FIELDS,
-        http={
+    CONFIG_DEFAULTS = {
+        'http': {
             'bind': '127.0.0.1:5000',
             'debug': False,
             'root_token': None,
         }
-    )
+    }
+
+    CONFIG_SCHEMAS = MTRPCServerInterface.CONFIG_SCHEMAS + [schema.by_example(CONFIG_DEFAULTS)]
+
+    RPC_MODE = 'server'
 
     def __init__(self):
         super(HttpServer, self).__init__()
@@ -160,8 +159,8 @@ class HttpServer(MTRPCServerInterface):
         return flask_app
 
     def start(self, final_callback=None):
-        http_debug = self.config['http'].get('debug', self.CONFIG_SECTION_FIELDS['http']['debug'])
-        http_bind = self.config['http'].get('bind', self.CONFIG_SECTION_FIELDS['http']['bind'])
+        http_debug = self.config['http']['debug']
+        http_bind = self.config['http']['bind']
         flask_app = self.build_wsgi_app()
         if http_debug:
             host, port = http_bind.rsplit(':', 1)

@@ -9,25 +9,20 @@ from mtrpc.server import threads
 
 class AmqpServer(MTRPCServerInterface):
 
-    OBLIGATORY_CONFIG_SECTIONS = ('amqp_params', 'bindings')
-    CONFIG_SECTION_TYPES = dict(
-        MTRPCServerInterface.CONFIG_SECTION_TYPES,
-        amqp_params=dict,
-        exchange_types=dict,
-        bindings=list,
-        manager_settings=dict,  # !TODO! - inaczej...
-        manager_attributes=dict,
-        responder_attributes=dict,
-    )
-    CONFIG_SECTION_FIELDS = dict(
-        MTRPCServerInterface.CONFIG_SECTION_FIELDS,
-        amqp_params=None,  # to be a dict with some keys...
-        exchange_types=None,  # to be a dict: {exchange, its type}
-        bindings=None,  # to be a list of binding props
-        manager_settings=None,  # to be a dict with some keys... !TODO! - inaczej...
-        manager_attributes=None,  # to be a dict with some keys...
-        responder_attributes=None,  # to be a dict with some keys...
-    )
+    CONFIG_SCHEMA = {
+        'type': 'object',
+        'properties': {
+            'amqp_params': {'type': 'object', 'default': None},
+            'exchange_types': {'type': 'object', 'default': None},
+            'bindings': {'type': 'array', 'default': None},
+            'manager_settings': {'type': 'object', 'default': None},
+            'manager_attributes': {'type': 'object', 'default': None},
+            'responder_attributes': {'type': 'object', 'default': None},
+        },
+        'required': ['amqp_params', 'bindings']
+    }
+    CONFIG_SCHEMAS = MTRPCServerInterface.CONFIG_SCHEMAS +[CONFIG_SCHEMA]
+
     RPC_MODE = 'server'
 
     def __init__(self):
@@ -40,22 +35,6 @@ class AmqpServer(MTRPCServerInterface):
 
     @classmethod
     def validate_and_complete_config(cls, config):
-
-        # verify completeness
-        omitted = set(cls.OBLIGATORY_CONFIG_SECTIONS).difference(config)
-        if omitted:
-            raise ValueError('Section(s): {0} -- should not be omitted'
-                             .format(', '.join(sorted(omitted))))
-
-        config = super(AmqpServer, cls).validate_and_complete_config(config)
-
-        # verify and prepare exchange types
-        for exchange, etype in config['exchange_types'].iteritems():
-            if not (isinstance(exchange, basestring)
-                    and isinstance(etype, basestring)):
-                raise ValueError("Illegal item in exchange_types section:"
-                                 " {0!r}: {1!r}".format(exchange, etype))
-
         # verify and prepare binding properties (turn it into a list
         # of threads.BindingProps namedtuple instances)
         bindings = []
