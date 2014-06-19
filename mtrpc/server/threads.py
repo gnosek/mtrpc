@@ -225,27 +225,21 @@ class ServiceThread(threading.Thread):
     def run(self):
         """Service thread activity"""
         try:
-            try:
-                self.log.info('Service thread started...')
-                self.starting_action()
-                self.main_loop()
-            except self.EverydayError as exc:
-                self.log.error("Service thread activity broken with error:"
-                               " %s", exc)
-                self.log.debug('Exception info:', exc_info=True)
-                reason = 'error: {0}'.format(exc)
-                self.stopping = Stopping(reason, loglevel='error')
-            except Exception:
-                self.log.critical("Service thread activity broken with "
-                                  "uncommon error:", exc_info=True)
-                reason = 'uncommon error: {0}'.format(sys.exc_info()[1])
-                self.stopping = Stopping(reason, loglevel='critical')
-            finally:
-                logger_method = getattr(self.log, self.stopping.loglevel)
-                logger_method('Service thread is being stopped -- reason: %s',
-                              self.stopping.reason)
+            self.log.info('Service thread started...')
+            self.starting_action()
+            self.main_loop()
+        except self.EverydayError as exc:
+            self.log.error("Service thread activity broken with error: %s", exc)
+            self.log.debug('Exception info:', exc_info=True)
+            reason = 'error: {0}'.format(exc)
+            self.stopping = Stopping(reason, loglevel='error')
+        except Exception:
+            self.log.critical("Service thread activity broken with uncommon error:", exc_info=True)
+            reason = 'uncommon error: {0}'.format(sys.exc_info()[1])
+            self.stopping = Stopping(reason, loglevel='critical')
         finally:
-            self.log.info('Service thread terminates...')
+            logger_method = getattr(self.log, self.stopping.loglevel)
+            logger_method('Service thread is being stopped -- reason: %s', self.stopping.reason)
             self.final_action()
 
     @abc.abstractmethod
