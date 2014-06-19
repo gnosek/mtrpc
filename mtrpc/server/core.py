@@ -242,19 +242,12 @@ class MTRPCServerInterface(object):
 
         """
 
-        try:
-            self = cls.get_instance()
-            self.config = self.validate_and_complete_config(config_dict)
-            self.configure_logging()
-            self.do_os_settings(force_daemon=force_daemon)
-            self.rpc_tree = self.load_rpc_tree(default_postinit_callable=default_postinit_callable,
-                                               rpc_mode=self.RPC_MODE)
-        except Exception:
-            logging.critical('Error during server configuration. '
-                             'Raising exception...', exc_info=True)
-            raise
-        else:
-            return self
+        self = cls.get_instance()
+        self.config = self.validate_and_complete_config(config_dict)
+        self.configure_logging()
+        self.do_os_settings(force_daemon=force_daemon)
+        self.rpc_tree = self.load_rpc_tree(default_postinit_callable=default_postinit_callable, rpc_mode=self.RPC_MODE)
+        return self
 
     @classmethod
     def configure_and_start(cls, config_dict=None,
