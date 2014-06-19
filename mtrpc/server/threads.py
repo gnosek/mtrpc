@@ -38,10 +38,7 @@ still the RPCManager thread -- if not crashed in a strange way -- waits
 until the RPCResponder thread terminates).
 
 The RPCResponder thread, when requested (by the RPCManager thread) to stop,
-normally waits until all RPCTaskThread threads complete. However it doesn't
-if it encounters a fatal error or if the stop request has 'force' flag set
-to True (but then suitable warnings with information about uncompleted
-tasks are logged).
+waits until all RPCTaskThread threads complete.
 
 RPCManager stop() method -- as well as constructors of stop requests (of
 `Stopping' namedtuple type) passed by one thread to the other -- take
@@ -50,9 +47,6 @@ the arguments:
 * reason (str) -- an arbitrary message (to be recorded in the server log),
 
 * loglevel (str) -- one of: 'debug', 'info', 'warning', 'error', 'critical',
-
-* force (bool) -- if true the server responder will not wait for
-                  remaining tasks to be completed.
 
 (Additionally RPCManager's stop() takes `timeout' argument -- but it
 applies to the caller thread [e.g. the main thread] and *not* the manager/
@@ -142,7 +136,7 @@ from ..common.errors import *
 
 MGR_REASON_PREFIX = 'requested by the manager'
 
-Stopping = namedtuple('Stopping', 'reason loglevel force')
+Stopping = namedtuple('Stopping', 'reason loglevel')
 BindingProps = namedtuple('BindingProps', 'exchange routing_key '
                                           'access_key_patt '
                                           'access_keyhole_patt')
@@ -251,12 +245,12 @@ class ServiceThread(threading.Thread):
                                " %s", exc)
                 self.log.debug('Exception info:', exc_info=True)
                 reason = 'error: {0}'.format(exc)
-                self.stopping = Stopping(reason, loglevel='error', force=False)
+                self.stopping = Stopping(reason, loglevel='error')
             except Exception:
                 self.log.critical("Service thread activity broken with "
                                   "uncommon error:", exc_info=True)
                 reason = 'uncommon error: {0}'.format(sys.exc_info()[1])
-                self.stopping = Stopping(reason, loglevel='critical', force=False)
+                self.stopping = Stopping(reason, loglevel='critical')
             finally:
                 logger_method = getattr(self.log, self.stopping.loglevel)
                 logger_method('Service thread is being stopped -- reason: %s',
@@ -826,13 +820,9 @@ class RPCManager(AMQPClientServiceThread):
                     self.log.exception('Error while tried to call '
                                        'the final callback:')
 
-    def stop(self, reason='manual stop', loglevel='info', force=False,
-             timeout=None):
+    def stop(self, reason='manual stop', loglevel='info', timeout=None):
 
         """Stop the service thread; to be called from another thread.
-
-        force=True  => the responder will not wait for
-                       remaining tasks to being completed
 
         timeout=None  => wait until the server terminates
         timeout=<i>   => wait, but no longer than <i> seconds
@@ -840,7 +830,7 @@ class RPCManager(AMQPClientServiceThread):
 
         """
 
-        self.stopping = Stopping(reason, loglevel, force)
+        self.stopping = Stopping(reason, loglevel)
         self._stop_the_responder(self.stopping)
         return self.join_stopping(timeout)
 
@@ -850,7 +840,7 @@ class RPCManager(AMQPClientServiceThread):
             reason = '{0} {1} ({2})'.format(MGR_REASON_PREFIX, self, stopping.reason)
         else:
             reason = stopping.reason
-        self.responder.stop(reason, stopping.loglevel, stopping.force)
+        self.responder.stop(reason, stopping.loglevel)
 
 
 #
@@ -913,8 +903,7 @@ class RPCResponder(AMQPClientServiceThread):
     def main_loop(self):
         """Main activity loop: getting and sending responses with results"""
 
-        while not (self.stopping
-                   and (self.stopping.force or not self.task_dict)):
+        while not (self.stopping and not self.task_dict):
             result = self.result_fifo.get()
             if isinstance(result, Stopping):
                 with self.mutex:
@@ -968,15 +957,10 @@ class RPCResponder(AMQPClientServiceThread):
                                ', '.join(sorted(map(str, not_completed))),
                                ', '.join(sorted(map(str, task_threads))))
 
-    def stop(self, reason='manual stop', loglevel='info', force=False):
+    def stop(self, reason='manual stop', loglevel='info'):
+        """Stop the service thread; to be called from another thread."""
 
-        """Stop the service thread; to be called from another thread.
-
-        force=True  => the responder will not wait for
-                       remaining tasks to being completed
-        """
-
-        stopping = Stopping(reason, loglevel, force)
+        stopping = Stopping(reason, loglevel)
         if self._is_connected:
             self.result_fifo.put(stopping)
         else:
