@@ -229,13 +229,7 @@ class MTRPCServerInterface(object):
         """
 
         self = cls.configure(config_dict, default_postinit_callable)
-        try:
-            self.start(final_callback=final_callback)
-        except Exception:
-            self.log.critical('Error during server start. '
-                              'Raising exception...', exc_info=True)
-            raise
-
+        self.start(final_callback=final_callback)
         return self
 
     @classmethod
