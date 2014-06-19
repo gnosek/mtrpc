@@ -15,7 +15,7 @@ setup(
     keywords='mtrpc rpc json jsonrpc amqp',
     entry_points={
         'console_scripts': [
-            'mtrpc-server = mtrpc.server:main',
+            'mtrpc-server = mtrpc.server.__main__:main',
             'mtrpc-request = mtrpc.mtrpc_request:main'
         ],
     }
