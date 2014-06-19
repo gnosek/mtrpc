@@ -452,6 +452,68 @@ class MTRPCServerInterface(object):
     #
     # RPC-methods tree loading
 
+    def _load_rpc_tree(self, imports, paths, default_postinit_callable, postinit_kwargs, rpc_mode):
+        root_mod = types.ModuleType('_MTRPC_ROOT_MODULE_')
+        root_method_list = []
+        setattr(root_mod, RPC_METHOD_LIST, root_method_list)
+        # load modules using absolute filesystem paths
+        for path_req in paths:
+            tokens = [s.strip() for s in path_req.rsplit(None, 2)]
+            if len(tokens) == 3 and tokens[1] == 'as':
+                file_path = tokens[0]
+                # e.g. '/home/zuo/foo.py as bar' => dst_name='bar'
+                dst_name = tokens[2]
+            else:
+                file_path = path_req
+                # e.g. '/home/zuo/foo.py' => dst_name='foo'
+                dst_name = os.path.splitext(os.path.basename(file_path))[0]
+            name_owner = getattr(root_mod, dst_name, None)
+            if name_owner is None:
+                module_name = 'mtrpc_pathloaded_{0}'.format(dst_name)
+                module = imp.load_source(module_name, file_path)
+                setattr(root_mod, dst_name, module)
+                root_method_list.append(dst_name)
+            else:
+                raise ValueError('Cannot load module from path "{0}" as '
+                                 '"{1}" -- because "{1}" name is already '
+                                 'used by module {2!r}'
+                                 .format(file_path, dst_name, name_owner))
+
+        # import modules using module names
+        for import_req in imports:
+            tokens = [s.strip() for s in import_req.split()]
+            if len(tokens) == 3 and tokens[1] == 'as':
+                src_name = tokens[0]
+                # e.g. 'module1.modulo2.modula3 as foo' => dst_name='foo'
+                dst_name = tokens[2]
+            elif len(tokens) == 1:
+                src_name = tokens[0]
+                # e.g. 'module1.modulo2.modula3' => dst_name='modula3'
+                dst_name = tokens[0].split('.')[-1]
+            else:
+                raise ValueError('Malformed import request: "{0}"'
+                                 .format(import_req))
+            name_owner = getattr(root_mod, dst_name, None)
+            if name_owner is None:
+                module = __import__(src_name,
+                                    fromlist=['__dict__'],
+                                    level=0)
+                setattr(root_mod, dst_name, module)
+                root_method_list.append(dst_name)
+            else:
+                raise ValueError('Cannot import module "{0}" as "{1}" -- '
+                                 'because "{1}" name is already used by '
+                                 'module {2!r}'
+                                 .format(src_name, dst_name, name_owner))
+
+        # creates a new RPC-tree object,
+        # walks recursively over submodules of the root module
+        # to collect names and callables -- to create RPC-modules
+        # and RPC-methods and populate the tree with them
+        rpc_tree = methodtree.RPCTree()
+        rpc_tree.build(root_mod, default_postinit_callable, postinit_kwargs, rpc_mode)
+        return rpc_tree
+
     def load_rpc_tree(self, default_postinit_callable=utils.basic_postinit, rpc_mode='server'):
         """Load RPC-methods from modules specified by names or filesystem paths"""
 
@@ -462,66 +524,7 @@ class MTRPCServerInterface(object):
             imports = rpc_tree_init_conf.get('imports', [])
             postinit_kwargs = rpc_tree_init_conf.get('postinit_kwargs', {})
 
-            root_mod = types.ModuleType('_MTRPC_ROOT_MODULE_')
-            root_method_list = []
-            setattr(root_mod, RPC_METHOD_LIST, root_method_list)
-
-            # load modules using absolute filesystem paths
-            for path_req in paths:
-                tokens = [s.strip() for s in path_req.rsplit(None, 2)]
-                if len(tokens) == 3 and tokens[1] == 'as':
-                    file_path = tokens[0]
-                    # e.g. '/home/zuo/foo.py as bar' => dst_name='bar'
-                    dst_name = tokens[2]
-                else:
-                    file_path = path_req
-                    # e.g. '/home/zuo/foo.py' => dst_name='foo'
-                    dst_name = os.path.splitext(os.path.basename(file_path))[0]
-                name_owner = getattr(root_mod, dst_name, None)
-                if name_owner is None:
-                    module_name = 'mtrpc_pathloaded_{0}'.format(dst_name)
-                    module = imp.load_source(module_name, file_path)
-                    setattr(root_mod, dst_name, module)
-                    root_method_list.append(dst_name)
-                else:
-                    raise ValueError('Cannot load module from path "{0}" as '
-                                     '"{1}" -- because "{1}" name is already '
-                                     'used by module {2!r}'
-                                     .format(file_path, dst_name, name_owner))
-
-            # import modules using module names
-            for import_req in imports:
-                tokens = [s.strip() for s in import_req.split()]
-                if len(tokens) == 3 and tokens[1] == 'as':
-                    src_name = tokens[0]
-                    # e.g. 'module1.modulo2.modula3 as foo' => dst_name='foo'
-                    dst_name = tokens[2]
-                elif len(tokens) == 1:
-                    src_name = tokens[0]
-                    # e.g. 'module1.modulo2.modula3' => dst_name='modula3'
-                    dst_name = tokens[0].split('.')[-1]
-                else:
-                    raise ValueError('Malformed import request: "{0}"'
-                                     .format(import_req))
-                name_owner = getattr(root_mod, dst_name, None)
-                if name_owner is None:
-                    module = __import__(src_name,
-                                        fromlist=['__dict__'],
-                                        level=0)
-                    setattr(root_mod, dst_name, module)
-                    root_method_list.append(dst_name)
-                else:
-                    raise ValueError('Cannot import module "{0}" as "{1}" -- '
-                                     'because "{1}" name is already used by '
-                                     'module {2!r}'
-                                     .format(src_name, dst_name, name_owner))
-
-            # creates a new RPC-tree object,
-            # walks recursively over submodules of the root module
-            # to collect names and callables -- to create RPC-modules
-            # and RPC-methods and populate the tree with them
-            rpc_tree = methodtree.RPCTree()
-            rpc_tree.build(root_mod, default_postinit_callable, postinit_kwargs, rpc_mode)
+            rpc_tree = self._load_rpc_tree(imports, paths, default_postinit_callable, postinit_kwargs, rpc_mode)
 
         except Exception:
             raise RuntimeError('Error when loading RPC-methods -- {0}'
