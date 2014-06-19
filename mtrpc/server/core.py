@@ -3,7 +3,7 @@ import threading
 
 from mtrpc.common import utils
 from mtrpc.common.const import DEFAULT_LOG_HANDLER_SETTINGS
-from mtrpc.server import methodtree, schema
+from mtrpc.server import schema
 
 
 class MTRPCServerInterface(object):
@@ -164,7 +164,7 @@ class MTRPCServerInterface(object):
                 return cls._instance
 
     @classmethod
-    def configure(cls, config_dict=None):
+    def configure(cls, config_dict=None, rpc_tree=None):
 
         """Get the instance, load config + configure (don't start) the server.
 
@@ -172,31 +172,10 @@ class MTRPCServerInterface(object):
         """
 
         self = cls.get_instance()
-        self.config = self.validate_and_complete_config(config_dict)
+        self.config = config_dict
         self.configure_logging()
-        self.rpc_tree = self.load_rpc_tree(rpc_mode=self.RPC_MODE)
+        self.rpc_tree = rpc_tree
         return self
-
-    @classmethod
-    def configure_and_start(cls, config_dict=None, final_callback=None):
-        """The same what configure() does, then run the server.
-
-        Obligatory argument: config_path -- path of a config file.
-
-        Optional arguments:
-
-        * final_callback (callable object) -- to be called from the
-          manager thread before it terminates.
-
-        """
-
-        self = cls.configure(config_dict)
-        self.start(final_callback=final_callback)
-        return self
-
-    @classmethod
-    def validate_and_complete_config(cls, config):
-        return config
 
     #
     # Environment-related preparations
@@ -215,20 +194,6 @@ class MTRPCServerInterface(object):
         utils.configure_logging(self.log, prev_log, self._log_handlers,
                                 log_config)
         return self.log
-
-    #
-    # RPC-methods tree loading
-
-    def load_rpc_tree(self, rpc_mode='server'):
-        """Load RPC-methods from modules specified by names or filesystem paths"""
-
-        rpc_tree_init_conf = self.config.get('rpc_tree_init', {})
-
-        paths = rpc_tree_init_conf.get('paths', [])
-        imports = rpc_tree_init_conf.get('imports', [])
-        postinit_kwargs = rpc_tree_init_conf.get('postinit_kwargs', {})
-
-        return methodtree.RPCTree.load(imports, paths, postinit_kwargs, rpc_mode)
 
     #
     # The actual server management

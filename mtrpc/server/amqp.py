@@ -34,7 +34,7 @@ class AmqpServer(MTRPCServerInterface):
         super(AmqpServer, self).__init__()
 
     @classmethod
-    def validate_and_complete_config(cls, config):
+    def prepare_bindings(cls, config):
         # verify and prepare binding properties (turn it into a list
         # of threads.BindingProps namedtuple instances)
         bindings = []
@@ -71,7 +71,7 @@ class AmqpServer(MTRPCServerInterface):
                 if self.manager.is_alive():
                     raise RuntimeError('The server is already started')
 
-            config = self.config
+            config = self.prepare_bindings(self.config)
             rpc_tree = self.rpc_tree
             log = self.log
 

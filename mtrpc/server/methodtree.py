@@ -354,7 +354,10 @@ class RPCTree(Mapping):
     CONFIG_SCHEMAS = [schema.by_example(CONFIG_DEFAULTS)]
 
     @classmethod
-    def load(cls, imports, paths, postinit_kwargs, rpc_mode):
+    def load(cls, config, rpc_mode):
+        paths = config['rpc_tree_init']['paths']
+        imports = config['rpc_tree_init']['imports']
+        postinit_kwargs = config['rpc_tree_init']['postinit_kwargs']
         root_mod = types.ModuleType('_MTRPC_ROOT_MODULE_')
         root_method_list = []
         setattr(root_mod, RPC_METHOD_LIST, root_method_list)

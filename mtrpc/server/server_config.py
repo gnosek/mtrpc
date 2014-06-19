@@ -62,6 +62,7 @@ class ServerConfig(object):
         self.server_class = server_class
         self.rpc_tree_class = rpc_tree_class
         self.server = None
+        self.rpc_tree = None
 
     def validate_config(self, cls):
         if hasattr(cls, 'CONFIG_SCHEMAS'):
@@ -75,7 +76,9 @@ class ServerConfig(object):
 
     def run(self, final_callback=None):
         self.validate()
-        self.server = self.server_class.configure_and_start(self.config_dict, final_callback)
+        self.rpc_tree = self.rpc_tree_class.load(self.config_dict, rpc_mode=self.server_class.RPC_MODE)
+        server = self.server_class.configure(self.config_dict, self.rpc_tree)
+        server.start(final_callback=final_callback)
 
     def stop(self):
         if hasattr(self.server, 'stop'):
