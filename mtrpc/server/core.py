@@ -358,6 +358,6 @@ class MTRPCServerInterface(object):
 
         raise NotImplementedError()
 
-    def stop(self, reason='manual stop', loglevel='info', timeout=SIGNAL_STOP_TIMEOUT):
+    def stop(self, reason='manual stop', timeout=SIGNAL_STOP_TIMEOUT):
 
         raise NotImplementedError()

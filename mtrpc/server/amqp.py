@@ -118,17 +118,13 @@ class AmqpServer(MTRPCServerInterface):
 
         return self.manager
 
-    def stop(self, reason='manual stop', loglevel='info',
-             timeout=MTRPCServerInterface.SIGNAL_STOP_TIMEOUT):
+    def stop(self, reason='manual stop', timeout=MTRPCServerInterface.SIGNAL_STOP_TIMEOUT):
 
         """Request the manager to stop the responder and then to stop itself.
 
         Arguments:
 
         * reason (str) -- an arbitrary message (to be recorded in the log);
-
-        * loglevel (str) -- one of: 'debug', 'info', 'warning', 'error',
-          'critical';
 
         * timeout (int or None)
           -- timeout=None  => wait until the manager thread terminates,
@@ -148,7 +144,7 @@ class AmqpServer(MTRPCServerInterface):
                 return True
 
         self.log.info('Stopping the server (reason: "%s")...', reason)
-        stopped = self.manager.stop(reason, loglevel, timeout)
+        stopped = self.manager.stop(reason, 'info', timeout)
         if stopped:
             self.manager = None
         else:
