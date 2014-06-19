@@ -323,48 +323,19 @@ class MTRPCServerInterface(object):
 
     #
     # OS signal handlers:
-    def _restart_handler(self, signal_num, stack_frame, stopping_timeout):
+    def _restart_handler(self, signal_num, stack_frame):
         """"restart" action"""
-        try:
-            self.log.info('Signal #%s received by the process -- '
-                          '"restart" action starts...', signal_num)
-            if self.stop(reason='restart', timeout=stopping_timeout):
-                self.restart_on()
-        except Exception:
-            self.log.critical('Error while restarting. Raising exception...',
-                              exc_info=True)
-            raise
+        self.log.info('Signal #%s received by the process -- '
+                      '"restart" action starts...', signal_num)
+        if self.stop(reason='restart'):
+            self.restart_on()
 
-    _reload_handler = _restart_handler
-
-    def _exit_handler(self, signal_num, stack_frame, stopping_timeout):
+    def _exit_handler(self, signal_num, stack_frame):
         """"exit" action"""
-        try:
-            self.log.info('Signal #%s received by the process -- '
-                          '"exit" action starts...', signal_num)
-            if self.stop(reason='exit', timeout=stopping_timeout):
-                sys.exit()
-        except SystemExit:
-            raise
-        except Exception:
-            self.log.critical('Error while exiting. Raising exception...',
-                              exc_info=True)
-            raise
-
-    def _force_exit_handler(self, signal_num, stack_frame, stopping_timeout):
-        """"force_exit" action"""
-        try:
-            self.log.info('Signal #%s received by the process -- '
-                          '"force_exit" action starts...', signal_num)
-            if self.stop(reason='force-exit', force=True,
-                         timeout=stopping_timeout):
-                sys.exit()
-        except SystemExit:
-            raise
-        except Exception:
-            self.log.critical('Error while force-exiting. Raising '
-                              'exception...', exc_info=True)
-            raise
+        self.log.info('Signal #%s received by the process -- '
+                      '"exit" action starts...', signal_num)
+        if self.stop(reason='exit'):
+            sys.exit()
 
     #
     # RPC-methods tree loading
