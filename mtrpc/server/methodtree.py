@@ -333,14 +333,6 @@ class RPCTree(Mapping):
     RPCMethod = RPCMethod
     RPCModule = RPCModule
 
-    def __init__(self):
-
-        """Basic initialization"""
-
-        self.item_dict = {}  # maps full names to RPC-objects
-        self.is_built = False
-        self.rpc_mode = None  # 'server' or 'cli'
-
     @classmethod
     def load(cls, imports, paths, default_postinit_callable, postinit_kwargs, rpc_mode):
         root_mod = types.ModuleType('_MTRPC_ROOT_MODULE_')
@@ -396,35 +388,25 @@ class RPCTree(Mapping):
                                  'module {2!r}'
                                  .format(src_name, dst_name, name_owner))
 
-        # creates a new RPC-tree object,
-        # walks recursively over submodules of the root module
-        # to collect names and callables -- to create RPC-modules
-        # and RPC-methods and populate the tree with them
-        rpc_tree = cls()
-        rpc_tree.build(root_mod, default_postinit_callable, postinit_kwargs, rpc_mode)
-        return rpc_tree
+        return cls(root_mod, default_postinit_callable, postinit_kwargs, rpc_mode)
 
-    def build(self,
-              root_pymod=None,
-              default_postinit_callable=(lambda: None),
-              postinit_kwargs=None,
-              rpc_mode='server'):
+    def __init__(self,
+                 root_pymod=None,
+                 default_postinit_callable=(lambda: None),
+                 postinit_kwargs=None,
+                 rpc_mode='server'):
 
         """Build the tree (populate it with RPC-modules/methods)"""
 
-        if self.is_built:
-            raise RuntimeError("Cannot run build() method of RPCTree instance"
-                               " more than once -- it has been already done")
+        self.item_dict = {}  # maps full names to RPC-objects
+        self.rpc_mode = rpc_mode
         if postinit_kwargs is None:
             postinit_kwargs = {}
-
-        self.rpc_mode = rpc_mode
 
         self._build_subtree(root_pymod, '',
                             default_postinit_callable, postinit_kwargs,
                             ancestor_pymods=set(), initialized_pymods={},
                             pymods2anticipated_names=defaultdict(set))
-        self.is_built = True
 
     def _build_subtree(self, cur_pymod, cur_full_name,
                        default_postinit_callable, postinit_kwargs,
