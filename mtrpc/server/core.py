@@ -22,7 +22,7 @@ class MTRPCServerInterface(object):
     * get_instance() -- get (create if it does not exist) the
       MTRPCServerInterface instance; it doesn't do anything else, so
       after creating the instance your script is supposed to call
-      configure_logging(), do_os_settings(), start()...
+      configure_logging(), start()...
 
     * configure() -- get the instance, read config file (see: above config
       file structure/content description), set up logging, OS-related stuff
@@ -40,7 +40,6 @@ class MTRPCServerInterface(object):
     ^^^^^^^^^^^^^^^^^^^^^^^
 
     * configure_logging() -- set up the server logger;
-    * do_os_settings() -- set OS signal handlers and do some other things,
     * load_rpc_tree() -- load RPC-module/methods;
     * start() -- create and start service threads (manager and responder),
     * stop() -- stop these service threads.
@@ -50,23 +49,6 @@ class MTRPCServerInterface(object):
     adequate objects as arguments.
 
     See documentation and signatures of that methods for more details.
-
-    OS signal handlers
-    ^^^^^^^^^^^^^^^^^^
-
-    * _exit_handler(),
-    * _force_exit_handler(),
-    * _restart_handler() and its alias _reload_handler()
-
-    They define so called "actions" and their names are constructed
-    in such a way: '_' + <action name> + '_handler' -- so they define:
-    'exit', 'force_exit', 'restart' ('reload') actions. That action names
-    can be used in the config to define OS signal handlers (which are set,
-    basing on that config settings, by do_os_settings() method). It is
-    possible to add custom action handlers (e.g. in a subclass of this
-    class) and refer to them in the config by action names.
-
-    See signatures (argument specs) of that methods for some details.
 
     Public static/class methods
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -128,7 +110,6 @@ class MTRPCServerInterface(object):
     CONFIG_SECTION_TYPES = dict(
         rpc_tree_init=dict,
         logging_settings=dict,
-        os_settings=dict,
     )
     # allowed sections of a config file and their default content
     CONFIG_SECTION_FIELDS = dict(
@@ -158,15 +139,6 @@ class MTRPCServerInterface(object):
             handlers=[DEFAULT_LOG_HANDLER_SETTINGS],
             propagate=False
         ),
-        os_settings=dict(
-            umask=None,
-            daemon=False,
-            signal_actions=dict(
-                SIGTERM='exit',
-                SIGHUP='restart',
-            ),
-            sig_stopping_timeout=60,
-        ),
     )
     RPC_MODE = None
 
@@ -193,9 +165,6 @@ class MTRPCServerInterface(object):
             self.__class__._instance = self
 
         self.config = None
-
-        # to be set in do_os_settings()
-        self.daemonized = False
         self._signal_handlers = {}
 
         # to be used in configure_and_start() and restart_on()
@@ -368,12 +337,8 @@ class MTRPCServerInterface(object):
     def do_os_settings(self):
         """Set umask and working dir; daemonize or not; set OS signal handlers"""
 
-        os_settings = self.config['os_settings']
-
-        signal_actions = os_settings.get('signal_actions',
-                                         dict(SIGTERM='exit',
-                                              SIGHUP='restart'))
-        sig_stopping_timeout = os_settings.get('sig_stopping_timeout', 60)
+        signal_actions = dict(SIGTERM='exit', SIGHUP='restart')
+        sig_stopping_timeout = 45
         self.setup_signal_handlers(signal_actions, sig_stopping_timeout)
 
     #

@@ -37,14 +37,6 @@ A simple example
         "bindings": [
             ["request_amqp_exchange", "request_amqp_routing_key", "", ""]
         ],
-        "os_settings": {
-            "daemon": false,
-            "signal_actions": {
-                "SIGHUP": "restart",
-                "SIGTERM": "exit"
-            },
-            "sig_stopping_timeout": 45
-        }
     }
 
 * RPC-module definition -- my_module.py:
@@ -293,23 +285,6 @@ Server configuration file structure and content
 
   * "propagate": False (default) or True -- whether logged messages
     should be propagated up (again -- see Python stdlib `logging');
-
-* "os_settings: a dict of various OS-related settings (the default
-  values mentioned below will be used for missed items):
-
-  * "umask": None (default) or an integer -- specifies umask setting
-    (None means: no changes to the present state);
-
-  * "daemon": False (default) or True -- whether the whole server process
-    should be daemonized;
-
-  * "signal_actions": a dict mapping OS signal names (as defined in Python
-    stdlib `signal' module) to the names of, so called, actions
-    (see: MTRPCServerInterface documentation)
-    -- default content: {"SIGTERM": "exit', "SIGHUP": "restart"}
-
-  * "sig_stopping_timeout": an integer (default: 60) -- timeout for waiting
-    for manager termination when it is being stopped/restarted by OS signals.
 
 [The highest level items are sometimes called "config sections"].
 

@@ -14,11 +14,3 @@ bindings: [
 manager_settings: {
     "client_id": "example"
 }
-os_settings: {
-    "daemon": false, 
-    "signal_actions": {
-        "SIGHUP": "restart",
-        "SIGTERM": "exit"
-    }, 
-    "sig_stopping_timeout": 45
-}

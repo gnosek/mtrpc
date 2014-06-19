@@ -56,11 +56,5 @@
         "level": "info", 
         "server_logger": "mtrpc.server",
         "propagate": false
-    }, 
-    "os_settings": {
-        "daemon": false, 
-        "signal_actions": {"SIGHUP": "restart", "SIGTERM": "exit"}, 
-        "sig_stopping_timeout": 30, 
-        "umask": null
     }
 }
