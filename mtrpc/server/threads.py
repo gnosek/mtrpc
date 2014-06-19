@@ -225,19 +225,8 @@ class ServiceThread(threading.Thread):
     def run(self):
         """Service thread activity"""
         try:
-            self.log.info('Service thread started...')
-            self.main()
-        except Exception:
-            self.log.critical('Service thread encountered uncommon error:',
-                              exc_info=True)
-        finally:
-            self.log.info('Service thread terminates...')
-
-
-    def main(self):
-        """Main part of service thread activity"""
-        try:
             try:
+                self.log.info('Service thread started...')
                 self.starting_action()
                 self.main_loop()
             except self.EverydayError as exc:
@@ -256,6 +245,7 @@ class ServiceThread(threading.Thread):
                 logger_method('Service thread is being stopped -- reason: %s',
                               self.stopping.reason)
         finally:
+            self.log.info('Service thread terminates...')
             self.final_action()
 
     @abc.abstractmethod
