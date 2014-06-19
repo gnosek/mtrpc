@@ -378,9 +378,6 @@ class MTRPCServerInterface(object):
         os_settings = self.config['os_settings']
 
         umask = os_settings.get('umask')
-        if umask is None:
-            umask = os.umask(0)  # (os.umask() sets new, returns previous)
-        os.umask(umask)
 
         if (os_settings.get('daemon') or force_daemon) and not self.daemonized:
             # daemonize:

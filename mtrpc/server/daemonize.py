@@ -10,7 +10,11 @@ import os
 import sys
 
 
-def daemonize(umask=0, workdir='/'):
+def daemonize(umask=None, workdir='/'):
+    if umask is None:
+        umask = os.umask(0)
+    os.umask(umask)
+
     pid = os.fork()
 
     if pid == 0:
