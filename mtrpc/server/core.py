@@ -1,4 +1,3 @@
-import functools
 import logging
 import threading
 import signal
@@ -141,6 +140,7 @@ class MTRPCServerInterface(object):
         ),
     )
     RPC_MODE = None
+    SIGNAL_STOP_TIMEOUT = 45
 
     _instance = None
     _server_iface_rlock = threading.RLock()
@@ -209,7 +209,7 @@ class MTRPCServerInterface(object):
         self = cls.get_instance()
         self.config = self.validate_and_complete_config(config_dict)
         self.configure_logging()
-        self.do_os_settings()
+        self.setup_signal_handlers()
         self.rpc_tree = self.load_rpc_tree(default_postinit_callable=default_postinit_callable, rpc_mode=self.RPC_MODE)
         return self
 
@@ -317,29 +317,9 @@ class MTRPCServerInterface(object):
                                 log_config)
         return self.log
 
-    def setup_signal_handlers(self, signal_actions, sig_stopping_timeout):
-        # unregister old signal handlers (when restarting)
-        while self._signal_handlers:
-            signal_num, handler = self._signal_handlers.popitem()
-            signal.signal(signal_num, signal.SIG_DFL)
-
-        # register signal handlers
-        if signal_actions is not None:
-            for signal_name, action_name in signal_actions.iteritems():
-                signal_num = getattr(signal, signal_name)
-                handler_func = getattr(self, '_{0}_handler'.format(action_name))
-                handler = functools.partial(handler_func,
-                                            stopping_timeout
-                                            =sig_stopping_timeout)
-                signal.signal(signal_num, handler)
-                self._signal_handlers[signal_num] = handler
-
-    def do_os_settings(self):
-        """Set umask and working dir; daemonize or not; set OS signal handlers"""
-
-        signal_actions = dict(SIGTERM='exit', SIGHUP='restart')
-        sig_stopping_timeout = 45
-        self.setup_signal_handlers(signal_actions, sig_stopping_timeout)
+    def setup_signal_handlers(self):
+        signal.signal(signal.SIGTERM, self._exit_handler)
+        signal.signal(signal.SIGHUP, self._restart_handler)
 
     #
     # OS signal handlers:
@@ -407,6 +387,6 @@ class MTRPCServerInterface(object):
 
         raise NotImplementedError()
 
-    def stop(self, reason='manual stop', loglevel='info', force=False, timeout=30):
+    def stop(self, reason='manual stop', loglevel='info', force=False, timeout=SIGNAL_STOP_TIMEOUT):
 
         raise NotImplementedError()
