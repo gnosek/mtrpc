@@ -1,6 +1,8 @@
 import Queue
 import threading
 import time
+import signal
+import sys
 from mtrpc.server.core import MTRPCServerInterface
 from mtrpc.server import threads
 
@@ -94,6 +96,9 @@ class AmqpServer(MTRPCServerInterface):
             rpc_tree = self.rpc_tree
             log = self.log
 
+            signal.signal(signal.SIGTERM, self._exit_handler)
+            signal.signal(signal.SIGHUP, self._restart_handler)
+
             self.responder = threads.RPCResponder(config['amqp_params'],
                                                   self.task_dict,
                                                   self.result_fifo,
@@ -117,6 +122,22 @@ class AmqpServer(MTRPCServerInterface):
             self.manager.start()
 
         return self.manager
+
+    #
+    # OS signal handlers:
+    def _restart_handler(self, signal_num, stack_frame):
+        """"restart" action"""
+        self.log.info('Signal #%s received by the process -- '
+                      '"restart" action starts...', signal_num)
+        if self.stop(reason='restart'):
+            self.restart_on()
+
+    def _exit_handler(self, signal_num, stack_frame):
+        """"exit" action"""
+        self.log.info('Signal #%s received by the process -- '
+                      '"exit" action starts...', signal_num)
+        if self.stop(reason='exit'):
+            sys.exit()
 
     def stop(self, reason='manual stop', timeout=MTRPCServerInterface.SIGNAL_STOP_TIMEOUT):
 
@@ -152,3 +173,8 @@ class AmqpServer(MTRPCServerInterface):
                              'server is not stopped (yet?)')
 
         return stopped
+
+    # it is useful as final_callback in loop mode
+    @classmethod
+    def restart_on(cls):
+        cls._instance._restart = True

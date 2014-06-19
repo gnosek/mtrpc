@@ -1,7 +1,5 @@
 import logging
 import threading
-import signal
-import sys
 
 from mtrpc.common import utils
 from mtrpc.common.const import DEFAULT_LOG_HANDLER_SETTINGS
@@ -165,7 +163,6 @@ class MTRPCServerInterface(object):
             self.__class__._instance = self
 
         self.config = None
-        self._signal_handlers = {}
 
         # to be used in configure_and_start() and restart_on()
         self._restart = False
@@ -209,7 +206,6 @@ class MTRPCServerInterface(object):
         self = cls.get_instance()
         self.config = self.validate_and_complete_config(config_dict)
         self.configure_logging()
-        self.setup_signal_handlers()
         self.rpc_tree = self.load_rpc_tree(default_postinit_callable=default_postinit_callable, rpc_mode=self.RPC_MODE)
         return self
 
@@ -241,11 +237,6 @@ class MTRPCServerInterface(object):
             raise
 
         return self
-
-    # it is useful as final_callback in loop mode
-    @classmethod
-    def restart_on(cls):
-        cls._instance._restart = True
 
     @classmethod
     def validate_and_complete_config(cls, config):
@@ -317,26 +308,6 @@ class MTRPCServerInterface(object):
                                 log_config)
         return self.log
 
-    def setup_signal_handlers(self):
-        signal.signal(signal.SIGTERM, self._exit_handler)
-        signal.signal(signal.SIGHUP, self._restart_handler)
-
-    #
-    # OS signal handlers:
-    def _restart_handler(self, signal_num, stack_frame):
-        """"restart" action"""
-        self.log.info('Signal #%s received by the process -- '
-                      '"restart" action starts...', signal_num)
-        if self.stop(reason='restart'):
-            self.restart_on()
-
-    def _exit_handler(self, signal_num, stack_frame):
-        """"exit" action"""
-        self.log.info('Signal #%s received by the process -- '
-                      '"exit" action starts...', signal_num)
-        if self.stop(reason='exit'):
-            sys.exit()
-
     #
     # RPC-methods tree loading
 
@@ -355,9 +326,5 @@ class MTRPCServerInterface(object):
     # The actual server management
 
     def start(self, final_callback=None):
-
-        raise NotImplementedError()
-
-    def stop(self, reason='manual stop', timeout=SIGNAL_STOP_TIMEOUT):
 
         raise NotImplementedError()

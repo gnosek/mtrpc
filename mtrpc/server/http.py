@@ -170,9 +170,6 @@ class HttpServer(MTRPCServerInterface):
             app = ConfigurableApplication(flask_app, bind=http_bind)
             app.run()
 
-    def stop(self, reason='manual stop', timeout=MTRPCServerInterface.SIGNAL_STOP_TIMEOUT):
-        pass
-
 
 if __name__ == '__main__':
     HttpServer.configure_and_start({})

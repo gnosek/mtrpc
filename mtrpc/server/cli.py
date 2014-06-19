@@ -17,9 +17,6 @@ class MtrpcCli(MTRPCServerInterface):
 
         code.interact(local=params)
 
-    def stop(self, reason='manual stop', force=False, timeout=MTRPCServerInterface.SIGNAL_STOP_TIMEOUT):
-        pass
-
 
 if __name__ == '__main__':
     cli = MtrpcCli()
