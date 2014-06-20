@@ -296,11 +296,11 @@ class AMQPClientServiceThread(ServiceThread):
         """A problem with AMQP connection"""
 
     def __init__(self, *args, **kw):
-        super(AMQPClientServiceThread, self).__init__(*args, **kw)
         self.amqp_conn = None
         self.amqp_channel = None
         self._amqp_params = None
         self._is_connected = False
+        super(AMQPClientServiceThread, self).__init__(*args, **kw)
 
     def init(self, amqp_params):
         """Initialization specific to AMQP client.
