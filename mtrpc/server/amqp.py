@@ -98,8 +98,7 @@ class AmqpServer(MTRPCServerInterface):
                                           log=log,
                                           **config['manager_attributes'])
         self.manager.start()
-
-        return self.manager
+        signal.pause()
 
     #
     # OS signal handlers:
