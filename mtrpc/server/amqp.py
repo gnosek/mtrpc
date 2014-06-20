@@ -52,7 +52,7 @@ class AmqpServer(MTRPCServerInterface):
         config['bindings'] = bindings
         return config
 
-    def start(self, final_callback=None):
+    def start(self, rpc_tree, final_callback=None):
 
         """Create the manager and responder threads. Start the manager.
 
@@ -72,7 +72,6 @@ class AmqpServer(MTRPCServerInterface):
                     raise RuntimeError('The server is already started')
 
             config = self.prepare_bindings(self.config)
-            rpc_tree = self.rpc_tree
             log = self.log
 
             signal.signal(signal.SIGTERM, self._exit_handler)

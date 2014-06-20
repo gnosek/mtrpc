@@ -59,6 +59,7 @@ class HttpServer(MTRPCServerInterface):
 
     def __init__(self):
         super(HttpServer, self).__init__()
+        self.rpc_tree = None
         self.writer_lock = multiprocessing.Lock()
 
     def find_rpc_object(self, url):
@@ -158,7 +159,8 @@ class HttpServer(MTRPCServerInterface):
         flask_app.route('/call/<path:rpc_object_url>', methods=['POST'])(self.call)
         return flask_app
 
-    def start(self, final_callback=None):
+    def start(self, rpc_tree, final_callback=None):
+        self.rpc_tree = rpc_tree
         http_debug = self.config['http']['debug']
         http_bind = self.config['http']['bind']
         flask_app = self.build_wsgi_app()

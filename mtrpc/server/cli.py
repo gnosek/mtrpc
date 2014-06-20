@@ -10,8 +10,8 @@ class MtrpcCli(MTRPCServerInterface):
 
     RPC_MODE = 'cli'
 
-    def start(self, final_callback=None):
-        params = dict(rpc=methodtree.RPCSubTree(self.rpc_tree))
+    def start(self, rpc_tree, final_callback=None):
+        params = dict(rpc=methodtree.RPCSubTree(rpc_tree))
         readline.set_completer(rlcompleter.Completer(params).complete)
         readline.parse_and_bind("tab:complete")
 

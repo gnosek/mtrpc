@@ -148,9 +148,6 @@ class MTRPCServerInterface(object):
         self.log = logging.getLogger()
         self._log_handlers = []
 
-        # the RPC-tree -- to be set in load_rpc_tree()
-        self.rpc_tree = None
-
     @classmethod
     def get_instance(cls):
         """Get (the only) class instance; create it if it does not exist yet"""
@@ -161,7 +158,7 @@ class MTRPCServerInterface(object):
                 return cls._instance
 
     @classmethod
-    def configure(cls, config_dict=None, rpc_tree=None):
+    def configure(cls, config_dict=None):
 
         """Get the instance, load config + configure (don't start) the server.
 
@@ -171,7 +168,6 @@ class MTRPCServerInterface(object):
         self = cls.get_instance()
         self.config = config_dict
         self.configure_logging()
-        self.rpc_tree = rpc_tree
         return self
 
     #
@@ -195,6 +191,6 @@ class MTRPCServerInterface(object):
     #
     # The actual server management
 
-    def start(self, final_callback=None):
+    def start(self, rpc_tree, final_callback=None):
 
         raise NotImplementedError()
