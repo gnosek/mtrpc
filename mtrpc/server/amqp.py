@@ -108,8 +108,7 @@ class AmqpServer(MTRPCServerInterface):
         """"restart" action"""
         self.log.info('Signal #%s received by the process -- '
                       '"restart" action starts...', signal_num)
-        if self.stop(reason='restart'):
-            self.restart_on()
+        self.stop(reason='restart')
 
     def _exit_handler(self, signal_num, stack_frame):
         """"exit" action"""
@@ -152,6 +151,3 @@ class AmqpServer(MTRPCServerInterface):
                              'server is not stopped (yet?)')
 
         return stopped
-
-    def restart_on(self):
-        self._restart = True

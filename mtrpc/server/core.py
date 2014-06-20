@@ -142,9 +142,6 @@ class MTRPCServerInterface(object):
 
         self.config = None
 
-        # to be used in configure_and_start() and restart_on()
-        self._restart = False
-
         # the actual logger to be configured and set in configure_logging()
         logging.basicConfig(format="%(asctime)s %(levelno)s "
                                    "@%(threadName)s: %(message)s")
