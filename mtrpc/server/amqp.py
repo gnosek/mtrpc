@@ -4,24 +4,26 @@ import time
 import signal
 import sys
 from mtrpc.server.core import MTRPCServerInterface
-from mtrpc.server import threads
+from mtrpc.server import schema, threads
 
 
 class AmqpServer(MTRPCServerInterface):
 
-    CONFIG_SCHEMA = {
+    CONFIG_DEFAULTS = {
+        'amqp_params': {},
+        'exchange_types': {},
+        'bindings': [],
+        'manager_settings': {},
+        'manager_attributes': {},
+        'responder_attributes': {},
+    }
+
+    CONFIG_SCHEMA_REQUIRED = {
         'type': 'object',
-        'properties': {
-            'amqp_params': {'type': 'object', 'default': None},
-            'exchange_types': {'type': 'object', 'default': None},
-            'bindings': {'type': 'array', 'default': None},
-            'manager_settings': {'type': 'object', 'default': None},
-            'manager_attributes': {'type': 'object', 'default': None},
-            'responder_attributes': {'type': 'object', 'default': None},
-        },
         'required': ['amqp_params', 'bindings']
     }
-    CONFIG_SCHEMAS = MTRPCServerInterface.CONFIG_SCHEMAS + [CONFIG_SCHEMA]
+    CONFIG_SCHEMAS = MTRPCServerInterface.CONFIG_SCHEMAS + [schema.by_example(CONFIG_DEFAULTS),
+        CONFIG_SCHEMA_REQUIRED]
 
     RPC_MODE = 'server'
 
