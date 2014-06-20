@@ -65,39 +65,38 @@ class AmqpServer(MTRPCServerInterface):
 
         self.log.info('Starting the server...')
 
-        with self._server_iface_rlock:
-            if self.manager is not None:
-                time.sleep(1)  # a bit paranoic :)
-                if self.manager.is_alive():
-                    raise RuntimeError('The server is already started')
+        if self.manager is not None:
+            time.sleep(1)  # a bit paranoic :)
+            if self.manager.is_alive():
+                raise RuntimeError('The server is already started')
 
-            config = self.prepare_bindings(self.config)
-            log = self.log
+        config = self.prepare_bindings(self.config)
+        log = self.log
 
-            signal.signal(signal.SIGTERM, self._exit_handler)
-            signal.signal(signal.SIGHUP, self._restart_handler)
+        signal.signal(signal.SIGTERM, self._exit_handler)
+        signal.signal(signal.SIGHUP, self._restart_handler)
 
-            self.responder = threads.RPCResponder(config['amqp_params'],
-                                                  self.task_dict,
-                                                  self.result_fifo,
-                                                  self.mutex,
-                                                  log=log,
-                                                  **config['responder_'
-                                                           'attributes'])
-
-            self.manager = threads.RPCManager(config['amqp_params'],
-                                              config['bindings'],
-                                              config['exchange_types'],
-                                              config['manager_settings']['client_id'],  # !TODO! - inaczej...
-                                              rpc_tree,
-                                              self.responder,
+        self.responder = threads.RPCResponder(config['amqp_params'],
                                               self.task_dict,
                                               self.result_fifo,
                                               self.mutex,
-                                              final_callback,
                                               log=log,
-                                              **config['manager_attributes'])
-            self.manager.start()
+                                              **config['responder_'
+                                                       'attributes'])
+
+        self.manager = threads.RPCManager(config['amqp_params'],
+                                          config['bindings'],
+                                          config['exchange_types'],
+                                          config['manager_settings']['client_id'],  # !TODO! - inaczej...
+                                          rpc_tree,
+                                          self.responder,
+                                          self.task_dict,
+                                          self.result_fifo,
+                                          self.mutex,
+                                          final_callback,
+                                          log=log,
+                                          **config['manager_attributes'])
+        self.manager.start()
 
         return self.manager
 
@@ -135,11 +134,10 @@ class AmqpServer(MTRPCServerInterface):
 
         """
 
-        with self._server_iface_rlock:
-            if self.manager is None or not self.manager.is_alive():
-                self.log.warning("Futile attempt to stop the server "
-                                 "while it's not started")
-                return True
+        if self.manager is None or not self.manager.is_alive():
+            self.log.warning("Futile attempt to stop the server "
+                             "while it's not started")
+            return True
 
         self.log.info('Stopping the server (reason: "%s")...', reason)
         stopped = self.manager.stop(reason, 'info', timeout)
