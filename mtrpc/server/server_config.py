@@ -77,7 +77,7 @@ class ServerConfig(object):
     def run(self, final_callback=None):
         self.validate()
         self.rpc_tree = self.rpc_tree_class.load(self.config_dict, rpc_mode=self.server_class.RPC_MODE)
-        server = self.server_class.configure(self.config_dict)
+        server = self.server_class(self.config_dict)
         server.start(self.rpc_tree, final_callback=final_callback)
 
     def stop(self):

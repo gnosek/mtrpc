@@ -1,5 +1,4 @@
 import logging
-import threading
 
 from mtrpc.common import utils
 from mtrpc.common.const import DEFAULT_LOG_HANDLER_SETTINGS
@@ -8,30 +7,6 @@ from mtrpc.server import schema
 
 class MTRPCServerInterface(object):
     """
-
-    Instantiation
-    ^^^^^^^^^^^^^
-
-    MTRPCServerInterface is a singleton type, i.e. it can have at most one
-    instance -- and it should not be instantiated directly but with one of
-    three alternative constructors (being class methods):
-
-    * get_instance() -- get (create if it does not exist) the
-      MTRPCServerInterface instance; it doesn't do anything else, so
-      after creating the instance your script is supposed to call
-      configure_logging(), start()...
-
-    * configure() -- get the instance, read config file (see: above config
-      file structure/content description), set up logging, OS-related stuff
-      (signal handlers, optional daemonization and some other things...)
-      and loads RPC-module/method definitions building the RPC-tree;
-      the only thing left to do by your script to run the server is to
-      call the start() method.
-
-    * configure_and_start() -- do the same what configure() does *plus* start
-      the server
-
-    See documentation of these methods for detailed info about arguments.
 
     Public instance methods
     ^^^^^^^^^^^^^^^^^^^^^^^
@@ -118,60 +93,11 @@ class MTRPCServerInterface(object):
     RPC_MODE = None
     SIGNAL_STOP_TIMEOUT = 45
 
-    _instance = None
-    _server_iface_rlock = threading.RLock()
-
-    def __init__(self):
-
-        """Attention: MTRPCServerInterface is a singleton class.
-
-        Use one of the alternavice constructor methods: get_instance(),
-        configure() or configure_and_start() -- rather than instantiate
-        the class directly.
-
-        """
-
-        with self.__class__._server_iface_rlock:
-            if self.__class__._instance is not None:
-                raise TypeError("{0} is a singleton class and its instance "
-                                "has been already created; use "
-                                "get_instance() class method to obtain it"
-                                .format(self.__class__.__name__))
-
-            self.__class__._instance = self
-
-        self.config = None
-
-        # the actual logger to be configured and set in configure_logging()
-        logging.basicConfig(format="%(asctime)s %(levelno)s "
-                                   "@%(threadName)s: %(message)s")
-        self.log = logging.getLogger()
-        self._log_handlers = []
-
-    @classmethod
-    def get_instance(cls):
-        """Get (the only) class instance; create it if it does not exist yet"""
-        with cls._server_iface_rlock:
-            if cls._instance is None:
-                return cls()
-            else:
-                return cls._instance
-
-    @classmethod
-    def configure(cls, config_dict=None):
-
-        """Get the instance, load config + configure (don't start) the server.
-
-        Obligatory argument:  config_dict -- parsed config
-        """
-
-        self = cls.get_instance()
+    def __init__(self, config_dict):
         self.config = config_dict
-        self.configure_logging()
-        return self
-
-    #
-    # Environment-related preparations
+        self._log_handlers = []
+        self.log = None
+        self.log = self.configure_logging()
 
     def configure_logging(self, log_config=None):
         """Configure server logger and its handlers"""
@@ -181,12 +107,11 @@ class MTRPCServerInterface(object):
             log_config = self.config['logging_settings']
 
         # get the logger
-        self.log = logging.getLogger(log_config.get('server_logger', ''))
+        logger = logging.getLogger(log_config.get('server_logger', ''))
 
         # configure it
-        utils.configure_logging(self.log, prev_log, self._log_handlers,
-                                log_config)
-        return self.log
+        utils.configure_logging(logger, prev_log, self._log_handlers, log_config)
+        return logger
 
     #
     # The actual server management

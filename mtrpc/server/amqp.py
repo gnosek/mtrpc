@@ -25,13 +25,13 @@ class AmqpServer(MTRPCServerInterface):
 
     RPC_MODE = 'server'
 
-    def __init__(self):
+    def __init__(self, config_dict):
         self.manager = None
         self.responder = None
         self.task_dict = {}
         self.result_fifo = Queue.Queue()
         self.mutex = threading.Lock()
-        super(AmqpServer, self).__init__()
+        super(AmqpServer, self).__init__(config_dict)
 
     @classmethod
     def prepare_bindings(cls, config):

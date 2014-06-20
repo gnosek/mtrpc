@@ -57,8 +57,8 @@ class HttpServer(MTRPCServerInterface):
 
     RPC_MODE = 'server'
 
-    def __init__(self):
-        super(HttpServer, self).__init__()
+    def __init__(self, config_dict):
+        super(HttpServer, self).__init__(config_dict)
         self.rpc_tree = None
         self.writer_lock = multiprocessing.Lock()
 
