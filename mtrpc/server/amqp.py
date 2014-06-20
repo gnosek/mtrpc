@@ -8,7 +8,6 @@ from mtrpc.server import schema, threads
 
 
 class AmqpServer(MTRPCServerInterface):
-
     CONFIG_DEFAULTS = {
         'amqp_params': {},
         'exchange_types': {},
@@ -23,7 +22,7 @@ class AmqpServer(MTRPCServerInterface):
         'required': ['amqp_params', 'bindings']
     }
     CONFIG_SCHEMAS = MTRPCServerInterface.CONFIG_SCHEMAS + [schema.by_example(CONFIG_DEFAULTS),
-        CONFIG_SCHEMA_REQUIRED]
+                                                            CONFIG_SCHEMA_REQUIRED]
 
     RPC_MODE = 'server'
 
