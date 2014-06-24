@@ -138,14 +138,9 @@ class RPCMethod(Callable):
             raise TypeError('Method object must be callable')
         self.callable_obj = callable_obj
         spec = inspect.getargspec(self.callable_obj)
-        self.formatted_arg_spec = get_effective_signature(self.callable_obj)
-        self._test_argspec(spec)
+        self._arg_test_callable = self._test_argspec(spec)
         self.full_name = full_name
         self.__doc__ = format_method_help(full_name, callable_obj)
-        try:
-            self.module = sys.modules[callable_obj.__module__]
-        except (AttributeError, KeyError):
-            self.module = None
         self.readonly = getattr(callable_obj, 'readonly', False)
 
     def _test_argspec(self, spec):
@@ -154,7 +149,7 @@ class RPCMethod(Callable):
                                   .format(inspect.formatargspec(*spec)))
         _temp_namespace = {}
         exec _arg_test_callable_str in _temp_namespace
-        self._arg_test_callable = _temp_namespace['_arg_test_callable']
+        return _temp_namespace['_arg_test_callable']
 
     def format_args(self, args, kw):
         """Format arguments in a way suitable for logging"""
@@ -199,7 +194,7 @@ class RPCMethod(Callable):
         raise RPCMethodArgError("Cannot call method {{name}} -- "
                                 "given arguments: ({0}) don't match "
                                 "method argument specification: {1}"
-                                .format(', '.join(itertools.chain(a, kw)), self.formatted_arg_spec))
+                                .format(', '.join(itertools.chain(a, kw)), get_effective_signature(self.callable_obj)))
 
 
 class RPCModule(Mapping):
