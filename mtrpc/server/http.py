@@ -119,10 +119,10 @@ class HttpServer(MTRPCServerInterface):
             return token == root_token
 
     def authenticate(self, rpc_object):
-        if rpc_object.gets_access_dict:
-            return  # the method will do its own authn/authz
         if self.matches_root_token(self.auth_token()):
             return
+        if rpc_object.gets_access_dict:
+            return  # the method will do its own authn/authz
         abort(403, 'Access denied')
 
     def get_help(self, rpc_object_url):
