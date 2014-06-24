@@ -8,7 +8,7 @@ from gunicorn.config import Config
 from gunicorn.app.base import Application
 
 from mtrpc.common.const import ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, ACCESS_KEYHOLE_KWARG
-from mtrpc.common.errors import RPCMethodArgError
+from mtrpc.common.errors import RPCMethodArgError, RPCAccessDenied
 from mtrpc.server.core import MTRPCServerInterface
 from mtrpc.server import schema
 
@@ -106,6 +106,8 @@ class HttpServer(MTRPCServerInterface):
             return jsonify(response=rpc_object(**args))
         except RPCMethodArgError as exc:
             abort(400, str(exc).replace('{name}', rpc_object.full_name))
+        except RPCAccessDenied:
+            abort(403, 'Access denied')
 
     @classmethod
     def auth_token(cls):

@@ -50,6 +50,9 @@ class RPCInternalServerError(RPCError):
     "Bad server configuration or other internal problems"
 
 
+class RPCAccessDenied(RPCError):
+    """Access denied"""
+
 #
 # RPC client exceptions
 
