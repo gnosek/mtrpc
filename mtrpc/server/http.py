@@ -81,7 +81,9 @@ class HttpServer(MTRPCServerInterface):
 
     @classmethod
     def add_access_args(cls, args):
-        args[ACCESS_DICT_KWARG] = {}
+        args[ACCESS_DICT_KWARG] = {
+            'token': cls.auth_token(),
+        }
         args[ACCESS_KEY_KWARG] = ''
         args[ACCESS_KEYHOLE_KWARG] = ''
 
@@ -105,17 +107,22 @@ class HttpServer(MTRPCServerInterface):
         except RPCMethodArgError as exc:
             abort(400, str(exc).replace('{name}', rpc_object.full_name))
 
+    @classmethod
+    def auth_token(cls):
+        return request.headers.get('X-Auth-Token')
+
+    def matches_root_token(self, token):
+        root_token = self.config['http'].get('root_token')
+        if root_token is None:
+            return bool(self.config['http'].get('debug'))
+        else:
+            return token == root_token
+
     def authenticate(self, rpc_object):
         if rpc_object.gets_access_dict:
             return  # the method will do its own authn/authz
-        root_token = self.config['http'].get('root_token')
-        if root_token is None:
-            if self.config['http'].get('debug'):
-                return
-        else:
-            request_token = request.headers.get('X-Auth-Token')
-            if request_token == root_token:
-                return
+        if self.matches_root_token(self.auth_token()):
+            return
         abort(403, 'Access denied')
 
     def get_help(self, rpc_object_url):
