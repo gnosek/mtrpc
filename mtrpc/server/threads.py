@@ -978,10 +978,9 @@ class RPCTaskThread(threading.Thread):
     def call_rpc_method(self, request, rpc_method, task):
         self.log.info('Calling %s%s', request.method,
                       rpc_method.format_args(request.params, request.kwparams))
-        kw = request.kwparams.copy()
-        kw[ACCESS_DICT_KWARG] = task.access_dict
         try:
-            result = rpc_method(*request.params, **kw)
+            rpc_method.authorize(**task.access_dict)
+            result = rpc_method(*request.params, **request.kwparams)
 
         except RPCMethodArgError:
             exc_type, orig_exc = sys.exc_info()[:2]

@@ -50,12 +50,6 @@ A simple example
         u"Add one argument to the other"
         return x + y
 
-    # one of the special _access_* arguments is used --
-    # passed to the method on the server side, not seen by the client:
-    def tell_the_rk(_access_dict):
-        u"Tell the AMQP routing key what the client used"
-        return ("You sent your request using the following "
-                "routing key: '{0}'".format(_access_dict['msg_rk']))
 
 * Another RPC-module definition -- my_submodule.py:
 

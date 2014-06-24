@@ -31,8 +31,7 @@ from mtrpc.common import utils
 
 from collections import defaultdict, Callable, Mapping
 
-from mtrpc.common.const import ACCESS_DICT_KWARG, RPC_METHOD_LIST, \
-    RPC_POSTINIT, RPC_MODULE_DOC, DEFAULT_LOG_HANDLER_SETTINGS
+from mtrpc.common.const import RPC_METHOD_LIST, RPC_POSTINIT, RPC_MODULE_DOC, DEFAULT_LOG_HANDLER_SETTINGS
 from mtrpc.common.errors import RPCMethodArgError, RPCNotFoundError
 from mtrpc.server import schema
 
@@ -111,19 +110,10 @@ def get_effective_signature(obj):
     # format official argument specification
     # -- without special access-related arguments (ACC_KWARGS)
     official_args, official_defaults = [], []
-    last_acc_kwarg = None
     for def_i, arg in enumerate(spec.args, -args_defs_diff):
-        if arg == ACCESS_DICT_KWARG:
-            last_acc_kwarg = arg
-        elif last_acc_kwarg:
-            TypeError("Bad argument specification of {0!r}: special "
-                      "access-related arguments (such as {1!r}) must be "
-                      "placed *after* any other arguments (such as {2!r})"
-                      .format(obj, last_acc_kwarg, arg))
-        else:
-            official_args.append(arg)
-            if def_i >= 0:
-                official_defaults.append(defaults[def_i])
+        official_args.append(arg)
+        if def_i >= 0:
+            official_defaults.append(defaults[def_i])
     official_defaults = tuple(official_defaults) or None
     return inspect.formatargspec(official_args, spec.varargs, spec.keywords, official_defaults)
 
@@ -132,11 +122,9 @@ class RPCMethod(Callable):
     """Callable object wrapper with some additional attributes.
 
     When an instance is called:
-    1) there is a check whether the callable takes `<common.const.ACCESS_...>'
-       arguments -- if not, they are not passed to it,
-    2) there is a check whether given arguments match the argument
+    1) there is a check whether given arguments match the argument
        specification of the callable -- if not, RPCMethodArgError is thrown;
-    3) the callable is called, the result is returned.
+    2) the callable is called, the result is returned.
     """
 
     def __init__(self, callable_obj, full_name=''):
@@ -162,8 +150,6 @@ class RPCMethod(Callable):
         self.readonly = getattr(callable_obj, 'readonly', False)
 
     def _test_argspec(self, spec):
-        # set attrs informing about special access-related arguments
-        self.gets_access_dict = ACCESS_DICT_KWARG in spec.args
         # create argument testing callable object:
         _arg_test_callable_str = ('def _arg_test_callable{0}: pass'
                                   .format(inspect.formatargspec(*spec)))
@@ -185,27 +171,25 @@ class RPCMethod(Callable):
             elif arg in kw:
                 real_args[i] = kw[arg]
 
-        spec_args = [a for a in spec.args if a != ACCESS_DICT_KWARG]
-        real_args[len(spec_args):] = []
+        real_args[len(spec.args):] = []
         real_args = [utils.log_repr(a) for a in real_args]
 
-        return inspect.formatargspec(spec_args, spec.varargs,
+        return inspect.formatargspec(spec.args, spec.varargs,
                                      spec.keywords, real_args, formatvalue=lambda v: '=' + v)
 
     def authorize(self, **kwargs):
         if hasattr(self.callable_obj, 'authorize'):
             return self.callable_obj.authorize(**kwargs)
+        else:
+            return NotImplemented
 
     def __call__(self, *args, **kw):
         """Call the method"""
 
-        if not self.gets_access_dict:
-            kw.pop(ACCESS_DICT_KWARG, None)
         try:
             # test given arguments (params)
             self._arg_test_callable(*args, **kw)
         except TypeError:
-            kw.pop(ACCESS_DICT_KWARG, None)
             self._raise_arg_error(args, kw)
         else:
             return self.callable_obj(*args, **kw)
@@ -783,11 +767,7 @@ class RPCSubTree(object):
                 k, tail = k.split('.', 1)
                 setattr(self, k, RPCSubTree(self.rpc_tree, k))
             else:
-                access_kwargs = {
-                    ACCESS_DICT_KWARG: {},
-                }
-                method_with_acc = functools.partial(method, **access_kwargs)
-                setattr(self, k, method_with_acc)
+                setattr(self, k, method)
 
     def __init__(self, rpc_tree, prefix=''):
         self.prefix = prefix

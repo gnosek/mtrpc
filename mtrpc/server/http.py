@@ -7,7 +7,6 @@ from flask import Flask, Response, abort, jsonify, request
 from gunicorn.config import Config
 from gunicorn.app.base import Application
 
-from mtrpc.common.const import ACCESS_DICT_KWARG
 from mtrpc.common.errors import RPCMethodArgError, RPCAccessDenied
 from mtrpc.server.core import MTRPCServerInterface
 from mtrpc.server import schema
@@ -80,8 +79,8 @@ class HttpServer(MTRPCServerInterface):
             return unicode(arg)
 
     @classmethod
-    def add_access_args(cls, args):
-        args[ACCESS_DICT_KWARG] = {
+    def access_args(cls):
+        return {
             'token': cls.auth_token(),
         }
 
@@ -95,12 +94,12 @@ class HttpServer(MTRPCServerInterface):
             else:
                 out[k] = [cls.detect_type(item) for item in v]
 
-        cls.add_access_args(out)
         return out
 
     @classmethod
     def call_rpc_object(cls, rpc_object, args):
         try:
+            rpc_object.authorize(cls.access_args())
             return jsonify(response=rpc_object(**args))
         except RPCMethodArgError as exc:
             abort(400, str(exc).replace('{name}', rpc_object.full_name))
@@ -121,9 +120,13 @@ class HttpServer(MTRPCServerInterface):
     def authenticate(self, rpc_object):
         if self.matches_root_token(self.auth_token()):
             return
-        if rpc_object.gets_access_dict:
-            return  # the method will do its own authn/authz
-        abort(403, 'Access denied')
+        try:
+            ret = rpc_object.authorize(self.access_args())
+        except RPCAccessDenied:
+            abort(403, 'Access denied')
+
+        if ret is NotImplemented:
+            abort(403, 'Access denied')
 
     def get_help(self, rpc_object_url):
         rpc_object = self.find_rpc_object(rpc_object_url)
@@ -147,8 +150,6 @@ class HttpServer(MTRPCServerInterface):
         args = request.get_json()
         if args is None:
             args = self.build_rpc_args(request.form)
-        else:
-            self.add_access_args(args)
         if getattr(rpc_object, 'readonly', False):
             return self.call_rpc_object(rpc_object, args)
         if self.writer_lock.acquire(False):

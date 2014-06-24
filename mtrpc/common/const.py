@@ -26,12 +26,6 @@ RPC-modules/methods:
     logger handler list (to set by the module postinit-callable).
 
 
-* Names of RPC-method special keyword arguments that define access rules:
-
-  * ACCESS_DICT_KWARG (see: the fragment of mtrpc.server documentation
-    about access key/keyhole mechanism);
-
-
 * Various defaults:
 
   * DEFAULT_RESP_EXCHANGE -- default name of AMQP exchange to be used to
@@ -53,9 +47,6 @@ RPC_POSTINIT = '__rpc_postinit__'
 RPC_LOG = '__rpc_log__'
 RPC_LOG_HANDLERS = '__rpc_log_handlers__'
 
-
-# Special RPC-method access-related argument names
-ACCESS_DICT_KWARG = '_access_dict'
 
 # Some defaults
 DEFAULT_REQ_RK_PATTERN = '{full_name}'
