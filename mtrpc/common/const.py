@@ -28,11 +28,8 @@ RPC-modules/methods:
 
 * Names of RPC-method special keyword arguments that define access rules:
 
-  * ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, ACCESS_KEYHOLE_KWARG (see:
-  the fragment of mtrpc.server documentation about access key/keyhole
-  mechanism);
-
-  * ACC_KWARGS -- frozen set of there three names.
+  * ACCESS_DICT_KWARG (see: the fragment of mtrpc.server documentation
+    about access key/keyhole mechanism);
 
 
 * Various defaults:
@@ -59,15 +56,6 @@ RPC_LOG_HANDLERS = '__rpc_log_handlers__'
 
 # Special RPC-method access-related argument names
 ACCESS_DICT_KWARG = '_access_dict'
-ACCESS_KEY_KWARG = '_access_key_patt'
-ACCESS_KEYHOLE_KWARG = '_access_keyhole_patt'
-
-ACC_KWARGS = frozenset((
-        ACCESS_DICT_KWARG,
-        ACCESS_KEY_KWARG,
-        ACCESS_KEYHOLE_KWARG,
-))
-
 
 # Some defaults
 DEFAULT_REQ_RK_PATTERN = '{full_name}'

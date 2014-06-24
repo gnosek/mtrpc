@@ -26,8 +26,7 @@ def __rpc_postinit__(rpc_tree, mod, full_name, logging_settings, mod_globals):
 # Functions that define 'system.*' RPC-methods
 #
 
-def list(module_name, deep=False, _access_dict=None,
-         _access_key_patt=None, _access_keyhole_patt=None):
+def list(module_name, deep=False):
     u"""List module names and method signatures (within a given module).
 
     Arguments:
@@ -41,15 +40,11 @@ def list(module_name, deep=False, _access_dict=None,
 
     """
 
-    return __builtin__.list(_iter_signatures(module_name, deep,
-                                             _access_dict,
-                                             _access_key_patt,
-                                             _access_keyhole_patt))
+    return __builtin__.list(_iter_signatures(module_name, deep))
 list.readonly = True
 
 
-def list_string(module_name, deep=False, _access_dict=None,
-                _access_key_patt=None, _access_keyhole_patt=None):
+def list_string(module_name, deep=False):
     u"""List module names and method signatures -- as one string.
 
     Arguments:
@@ -63,15 +58,11 @@ def list_string(module_name, deep=False, _access_dict=None,
 
     """
 
-    return '\n'.join(_iter_signatures(module_name, deep,
-                                      _access_dict,
-                                      _access_key_patt,
-                                      _access_keyhole_patt))
+    return '\n'.join(_iter_signatures(module_name, deep))
 list_string.readonly = True
 
 
-def help(name, deep=False, _access_dict=None,
-         _access_key_patt=None, _access_keyhole_patt=None):
+def help(name, deep=False):
     u"""List module/method help-texts, i.e signatures + docstrings.
 
     Arguments:
@@ -86,15 +77,11 @@ def help(name, deep=False, _access_dict=None,
 
     """
 
-    return __builtin__.list(_iter_help_texts(name, deep,
-                                             _access_dict,
-                                             _access_key_patt,
-                                             _access_keyhole_patt))
+    return __builtin__.list(_iter_help_texts(name, deep))
 help.readonly = True
 
 
-def help_string(name, deep=False, _access_dict=None,
-                _access_key_patt=None, _access_keyhole_patt=None):
+def help_string(name, deep=False):
     u"""List module/method help-texts -- as one string.
 
     Arguments:
@@ -109,10 +96,7 @@ def help_string(name, deep=False, _access_dict=None,
 
     """
 
-    return u'\n'.join(_iter_help_texts(name, deep,
-                                       _access_dict,
-                                       _access_key_patt,
-                                       _access_keyhole_patt))
+    return u'\n'.join(_iter_help_texts(name, deep))
 help_string.readonly = True
 
 
@@ -120,43 +104,30 @@ help_string.readonly = True
 # Private functions (containing the actual implementation)
 #
 
-def _iter_signatures(module_name, deep,
-                     _access_dict, _access_key_patt, _access_keyhole_patt):
+def _iter_signatures(module_name, deep):
     """Iterate over submodule names and method signatures"""
 
     yield module_name
 
-    for name, item in _iter_mod_subitems(module_name, deep,
-                                   _access_dict,
-                                   _access_key_patt,
-                                   _access_keyhole_patt):
+    for name, item in _iter_mod_subitems(module_name, deep):
         yield name + getattr(item, 'formatted_arg_spec', '')
 
 
-def _iter_help_texts(name, deep,
-                     _access_dict, _access_key_patt, _access_keyhole_patt):
+def _iter_help_texts(name, deep):
     """Iterate over module/method help-texts"""
 
-    rpc_obj = rpc_tree.try_to_obtain(name, _access_dict, _access_key_patt, _access_keyhole_patt)
+    rpc_obj = rpc_tree.try_to_obtain(name, access_dict={})
 
     yield rpc_obj.__doc__
 
     if isinstance(rpc_obj, rpc_tree.RPCModule):
-        for name, item in _iter_mod_subitems(name, deep,
-                                       _access_dict,
-                                       _access_key_patt,
-                                       _access_keyhole_patt):
+        for name, item in _iter_mod_subitems(name, deep):
             yield item.__doc__
 
 
-def _iter_mod_subitems(module_name, deep,
-                       _access_dict, _access_key_patt, _access_keyhole_patt):
+def _iter_mod_subitems(module_name, deep):
     """Iter. over accessible pairs (<full name>, <rpc submodule or method>)"""
 
     for name, item in rpc_tree.all_items(module_name, deep=deep):
-        if rpc_tree.check_access((name, item),
-                                 access_dict=_access_dict,
-                                 access_key_patt=_access_key_patt,
-                                 access_keyhole_patt=_access_keyhole_patt,
-                                 required_type=None):
+        if rpc_tree.check_access((name, item), access_dict={}, required_type=None):
             yield name, item

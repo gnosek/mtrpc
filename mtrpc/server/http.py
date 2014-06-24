@@ -7,7 +7,7 @@ from flask import Flask, Response, abort, jsonify, request
 from gunicorn.config import Config
 from gunicorn.app.base import Application
 
-from mtrpc.common.const import ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, ACCESS_KEYHOLE_KWARG
+from mtrpc.common.const import ACCESS_DICT_KWARG
 from mtrpc.common.errors import RPCMethodArgError, RPCAccessDenied
 from mtrpc.server.core import MTRPCServerInterface
 from mtrpc.server import schema
@@ -84,8 +84,6 @@ class HttpServer(MTRPCServerInterface):
         args[ACCESS_DICT_KWARG] = {
             'token': cls.auth_token(),
         }
-        args[ACCESS_KEY_KWARG] = ''
-        args[ACCESS_KEYHOLE_KWARG] = ''
 
     @classmethod
     def build_rpc_args(cls, args):

@@ -137,11 +137,8 @@ from ..common.errors import *
 MGR_REASON_PREFIX = 'requested by the manager'
 
 Stopping = namedtuple('Stopping', 'reason loglevel')
-BindingProps = namedtuple('BindingProps', 'exchange routing_key '
-                                          'access_key_patt '
-                                          'access_keyhole_patt')
-Task = namedtuple('Task', 'id request_message access_dict '
-                          'access_key_patt access_keyhole_patt reply_to')
+BindingProps = namedtuple('BindingProps', 'exchange routing_key')
+Task = namedtuple('Task', 'id request_message access_dict reply_to')
 Result = namedtuple('Result', 'task_id reply_to response_message')
 NoResult = namedtuple('NoResult', 'task_id')
 RPCRequest = namedtuple('RPCRequest', 'id method params kwparams')
@@ -724,8 +721,6 @@ class RPCManager(AMQPClientServiceThread):
         task = Task(task_id,
                     request_message=msg.body,
                     access_dict=access_dict,
-                    access_key_patt=binding_props.access_key_patt,
-                    access_keyhole_patt=binding_props.access_keyhole_patt,
                     reply_to=reply_to)
 
         task_recorded = False
@@ -977,8 +972,6 @@ class RPCTaskThread(threading.Thread):
         request = self._deserialize_request(task.request_message)
         rpc_method = self.rpc_tree.try_to_obtain(request.method,
                                         task.access_dict,
-                                        task.access_key_patt,
-                                        task.access_keyhole_patt,
                                         required_type=methodtree.RPCMethod)
         return request, rpc_method
 
@@ -987,8 +980,6 @@ class RPCTaskThread(threading.Thread):
                       rpc_method.format_args(request.params, request.kwparams))
         kw = request.kwparams.copy()
         kw[ACCESS_DICT_KWARG] = task.access_dict
-        kw[ACCESS_KEY_KWARG] = task.access_key_patt
-        kw[ACCESS_KEYHOLE_KWARG] = task.access_keyhole_patt
         try:
             result = rpc_method(*request.params, **kw)
 

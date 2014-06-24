@@ -20,7 +20,6 @@ import functools
 import inspect
 import itertools
 import os
-import re
 import string
 import textwrap
 import traceback
@@ -32,7 +31,7 @@ from mtrpc.common import utils
 
 from collections import defaultdict, Callable, Mapping
 
-from mtrpc.common.const import ACC_KWARGS, ACCESS_DICT_KWARG, ACCESS_KEY_KWARG, ACCESS_KEYHOLE_KWARG, RPC_METHOD_LIST, \
+from mtrpc.common.const import ACCESS_DICT_KWARG, RPC_METHOD_LIST, \
     RPC_POSTINIT, RPC_MODULE_DOC, DEFAULT_LOG_HANDLER_SETTINGS
 from mtrpc.common.errors import RPCMethodArgError, RPCNotFoundError
 from mtrpc.server import schema
@@ -114,7 +113,7 @@ def get_effective_signature(obj):
     official_args, official_defaults = [], []
     last_acc_kwarg = None
     for def_i, arg in enumerate(spec.args, -args_defs_diff):
-        if arg in ACC_KWARGS:
+        if arg == ACCESS_DICT_KWARG:
             last_acc_kwarg = arg
         elif last_acc_kwarg:
             TypeError("Bad argument specification of {0!r}: special "
@@ -165,8 +164,6 @@ class RPCMethod(Callable):
     def _test_argspec(self, spec):
         # set attrs informing about special access-related arguments
         self.gets_access_dict = ACCESS_DICT_KWARG in spec.args
-        self._gets_access_key = ACCESS_KEY_KWARG in spec.args
-        self._gets_access_keyhole = ACCESS_KEYHOLE_KWARG in spec.args
         # create argument testing callable object:
         _arg_test_callable_str = ('def _arg_test_callable{0}: pass'
                                   .format(inspect.formatargspec(*spec)))
@@ -188,7 +185,7 @@ class RPCMethod(Callable):
             elif arg in kw:
                 real_args[i] = kw[arg]
 
-        spec_args = [a for a in spec.args if a not in ACC_KWARGS]
+        spec_args = [a for a in spec.args if a != ACCESS_DICT_KWARG]
         real_args[len(spec_args):] = []
         real_args = [utils.log_repr(a) for a in real_args]
 
@@ -200,20 +197,11 @@ class RPCMethod(Callable):
 
         if not self.gets_access_dict:
             kw.pop(ACCESS_DICT_KWARG, None)
-
-        if not self._gets_access_key:
-            kw.pop(ACCESS_KEY_KWARG, None)
-
-        if not self._gets_access_keyhole:
-            kw.pop(ACCESS_KEYHOLE_KWARG, None)
-
         try:
             # test given arguments (params)
             self._arg_test_callable(*args, **kw)
         except TypeError:
             kw.pop(ACCESS_DICT_KWARG, None)
-            kw.pop(ACCESS_KEY_KWARG, None)
-            kw.pop(ACCESS_KEYHOLE_KWARG, None)
             self._raise_arg_error(args, kw)
         else:
             return self.callable_obj(*args, **kw)
@@ -634,8 +622,7 @@ class RPCTree(Mapping):
 
         return rpc_module
 
-    def try_to_obtain(self, full_name, access_dict, access_key_patt,
-                      access_keyhole_patt, required_type=None):
+    def try_to_obtain(self, full_name, access_dict, required_type=None):
 
         """Restricted access: get RPC-module/method only if key matches keyhole"""
 
@@ -645,9 +632,7 @@ class RPCTree(Mapping):
         except KeyError:
             raise RPCNotFoundError('RPC-name not found: {0}'.format(full_name))
         try:
-            if self.check_access((full_name, rpc_object), access_dict,
-                                 access_key_patt, access_keyhole_patt,
-                                 required_type):
+            if self.check_access((full_name, rpc_object), access_dict, required_type):
                 return rpc_object
             else:
                 raise RPCNotFoundError('RPC-name not found: {0}'.format(full_name))
@@ -661,8 +646,7 @@ class RPCTree(Mapping):
                 raise RPCNotFoundError(exc.args[0])
 
     @staticmethod
-    def check_access(rpc_item, access_dict, access_key_patt,
-                     access_keyhole_patt, required_type=None):
+    def check_access(rpc_item, access_dict, required_type=None):
 
         """Check: * rpc_item type (if specified); * whether key matches keyhole"""
 
@@ -674,35 +658,10 @@ class RPCTree(Mapping):
             raise TypeError('Bad RPC-object type ({0} required)'
                             .format(required_type.__name__))
 
-        split_name = full_name.split('.')
+        if hasattr(rpc_item, 'authorize'):
+            return rpc_item.authorize(**access_dict)
 
-        # Creating the actual access dict...
-        actual_access_dict = dict(
-            full_name=full_name,
-            local_name=split_name[-1],
-            parentmod_name='.'.join(split_name[:-1]),
-            split_name=split_name,
-            type=rpc_object_type,
-        )
-        # ...also with fields set in RPCManager.create_access_dict()
-        actual_access_dict.update(access_dict)
-
-        # Formatting access_key (using actual_access_dict)...
-        try:
-            access_key = access_key_patt.format(**actual_access_dict)
-        except KeyError:
-            raise BadAccessPatternError('access_key_patt: {0!r}'.format(access_key_patt))
-        # Formatting access_keyhole (using actual_access_dict)...
-        try:
-            access_keyhole = access_keyhole_patt.format(**actual_access_dict)
-        except KeyError:
-            raise BadAccessPatternError('access_keyhole_patt: {0!r}'.format(access_keyhole_patt))
-
-        # Test: access_key must match access_keyhole (regular expression)
-        if re.search(access_keyhole, access_key):
-            return True
-        else:
-            return False
+        return True
 
     #
     # Iterators
@@ -848,8 +807,6 @@ class RPCSubTree(object):
             else:
                 access_kwargs = {
                     ACCESS_DICT_KWARG: {},
-                    ACCESS_KEY_KWARG: '',
-                    ACCESS_KEYHOLE_KWARG: '',
                 }
                 method_with_acc = functools.partial(method, **access_kwargs)
                 setattr(self, k, method_with_acc)
