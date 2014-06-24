@@ -16,7 +16,6 @@ Terminology note
 
 """
 
-import functools
 import inspect
 import itertools
 import os
