@@ -179,7 +179,7 @@ class RPCMethod(Callable):
 
     def authorize(self, **kwargs):
         if hasattr(self.callable_obj, 'authorize'):
-            return self.callable_obj.authorize(**kwargs)
+            self.callable_obj.authorize(**kwargs)  # raise RPCAccessDenied on auth error
         else:
             return NotImplemented
 
