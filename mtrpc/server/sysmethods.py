@@ -129,5 +129,4 @@ def _iter_mod_subitems(module_name, deep):
     """Iter. over accessible pairs (<full name>, <rpc submodule or method>)"""
 
     for name, item in rpc_tree.all_items(module_name, deep=deep):
-        if rpc_tree.check_access((name, item), access_dict={}, required_type=None):
-            yield name, item
+        yield name, item

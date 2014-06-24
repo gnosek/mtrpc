@@ -192,6 +192,10 @@ class RPCMethod(Callable):
         return inspect.formatargspec(spec_args, spec.varargs,
                                      spec.keywords, real_args, formatvalue=lambda v: '=' + v)
 
+    def authorize(self, **kwargs):
+        if hasattr(self.callable_obj, 'authorize'):
+            return self.callable_obj.authorize(**kwargs)
+
     def __call__(self, *args, **kw):
         """Call the method"""
 
@@ -228,6 +232,9 @@ class RPCModule(Mapping):
         # public attributes:
         self.full_name = full_name
         self.__doc__ = format_module_help(full_name, doc)
+
+    def authorize(self, **kwargs):
+        pass
 
     def declare_attrs(self, doc):
         """Add doc if needed, re-generate help text if needed"""
@@ -631,37 +638,8 @@ class RPCTree(Mapping):
             rpc_object = self[full_name]
         except KeyError:
             raise RPCNotFoundError('RPC-name not found: {0}'.format(full_name))
-        try:
-            if self.check_access((full_name, rpc_object), access_dict, required_type):
-                return rpc_object
-            else:
-                raise RPCNotFoundError('RPC-name not found: {0}'.format(full_name))
-        except TypeError as exc:
-            try:
-                if not exc.args[0].startswith('Bad RPC-object type'):
-                    raise TypeError
-            except (IndexError, AttributeError, TypeError):
-                raise exc
-            else:
-                raise RPCNotFoundError(exc.args[0])
-
-    @staticmethod
-    def check_access(rpc_item, access_dict, required_type=None):
-
-        """Check: * rpc_item type (if specified); * whether key matches keyhole"""
-
-        full_name, rpc_object = rpc_item  # (name, RPC-method/module)
-        rpc_object_type = type(rpc_object)  # RPCMethod or RPCModule
-
-        # If type is specified, the RPC-object must be an instance of it
-        if required_type is not None and not issubclass(rpc_object_type, required_type):
-            raise TypeError('Bad RPC-object type ({0} required)'
-                            .format(required_type.__name__))
-
-        if hasattr(rpc_item, 'authorize'):
-            return rpc_item.authorize(**access_dict)
-
-        return True
+        rpc_object.authorize(**access_dict)
+        return rpc_object
 
     #
     # Iterators
